@@ -15,7 +15,7 @@ struct Coordinates
     double z_coordinate = 0;
 };
 
-bool operator< (const Coordinates& center_point, const Coordinates& begin_point);
+bool operator<(const Coordinates& center_point, const Coordinates& begin_point);
 
 struct Segment
 {

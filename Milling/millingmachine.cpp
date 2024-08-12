@@ -4,10 +4,17 @@ MillingMachine::MillingMachine(QObject *parent)
     : QObject{parent}, currentCoordinates(0,0,0)
 {
     serial = new QSerialPort(this);
+    serial->setPortName("COM3");
+    serial->setBaudRate(QSerialPort::Baud38400);
+    serial->setDataBits(QSerialPort::Data8);
+    serial->setParity(QSerialPort::NoParity);
+    serial->setStopBits(QSerialPort::OneStop);
+    serial->setFlowControl(QSerialPort::NoFlowControl);
+    connect(serial, SIGNAL(readyRead()), this, SLOT(receiveMessage()));
 }
 
 MillingMachine::~MillingMachine(){
-    serial->close();
+    closeCOMport();
     delete serial;
 }
 
@@ -40,81 +47,17 @@ const double MillingMachine::getCoordinateZ(){
 }
 
 void MillingMachine::getNextCoordinate(){
-    if(listCoordinates.empty()){
-        flagEmptyCoordinates = true;
-        return;
-    }
-    currentCoordinates.x_coordinate = listCoordinates.begin()->x_coordinate;
-    currentCoordinates.y_coordinate = listCoordinates.begin()->y_coordinate;
-    currentCoordinates.z_coordinate = listCoordinates.begin()->z_coordinate;
+    currentCoordinates.x_coordinate = listCoordinates.front().x_coordinate;
+    currentCoordinates.y_coordinate = listCoordinates.front().y_coordinate;
+    currentCoordinates.z_coordinate = listCoordinates.front().z_coordinate;
     listCoordinates.pop_front();
-    //std::cout << currentCoordinates.y_coordinate << std::endl;
-
 }
 
-void MillingMachine::G01(QString& textCoordinates){
-    double coordinate_x = currentCoordinates.x_coordinate;
-    double coordinate_y = currentCoordinates.y_coordinate;
-    double coordinate_z = currentCoordinates.z_coordinate;
-
-    while(textCoordinates.length() != 0){
-        int number_space = textCoordinates.indexOf(' ');
-        if(-1 != number_space){
-            number_space += 1;
-        }else{
-            number_space = textCoordinates.length();
-        }
-
-        if(textCoordinates[0] == 'X'){
-            coordinate_x = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
-            textCoordinates.remove(0, number_space);
-        }else if(textCoordinates[0] == 'Y'){
-            coordinate_y = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
-            textCoordinates.remove(0, number_space);
-        }else if(textCoordinates[0] == 'Z'){
-            coordinate_z = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
-            textCoordinates.remove(0, number_space);
-        }
-    }
-    listCoordinates.append(Coordinates(coordinate_x, coordinate_y, coordinate_z));
+bool MillingMachine::emptyListCoordinates() const{
+    return listCoordinates.empty();
 }
 
-void MillingMachine::G02(QString& textCoordinates){
-    double coordinate_x = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
-    textCoordinates.remove(0, textCoordinates.indexOf(' ')+1);
-    double coordinate_y = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
-    textCoordinates.remove(0, textCoordinates.indexOf(' ')+1);
-    double coordinate_i = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
-    textCoordinates.remove(0, textCoordinates.indexOf(' ')+1);
-    double coordinate_j = textCoordinates.mid(1, textCoordinates.indexOf('\n')).toDouble();
-    textCoordinates.remove(0, textCoordinates.length());
-    Coordinates point_begin(currentCoordinates.x_coordinate, currentCoordinates.y_coordinate, currentCoordinates.z_coordinate);
-    Coordinates point_end(coordinate_x, coordinate_y, currentCoordinates.z_coordinate);
-    Coordinates point_center(coordinate_i, coordinate_j, 0);
-    Segment segment(point_begin, point_end, point_center);
-    CrushingSegmentRight(segment, listCoordinates);
-}
-
-void MillingMachine::G03(QString& textCoordinates){
-    double coordinate_x = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
-    textCoordinates.remove(0, textCoordinates.indexOf(' ')+1);
-    double coordinate_y = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
-    textCoordinates.remove(0, textCoordinates.indexOf(' ')+1);
-    double coordinate_i = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
-    textCoordinates.remove(0, textCoordinates.indexOf(' ')+1);
-    double coordinate_j = textCoordinates.mid(1, textCoordinates.indexOf('\n')).toDouble();
-    textCoordinates.remove(0, textCoordinates.length());
-    Coordinates point_begin(currentCoordinates.x_coordinate, currentCoordinates.y_coordinate, currentCoordinates.z_coordinate);
-    Coordinates point_end(coordinate_x, coordinate_y, currentCoordinates.z_coordinate);
-    Coordinates point_center(coordinate_i, coordinate_j, 0);
-    Segment segment(point_begin, point_end, point_center);
-    CrushingSegmentLeft(segment, listCoordinates);
-}
-
-
-void MillingMachine::readCommandString(QString& textCoordinates){    
-    flagEmptyCoordinates = false;
-
+void MillingMachine::readCommandString(QString& textCoordinates){
     QString number_string = textCoordinates.mid(0, textCoordinates.indexOf(' ')+1);
     textCoordinates.remove(0, textCoordinates.indexOf(' ')+1);
     if(textCoordinates[0] == 'G'){
@@ -137,91 +80,120 @@ void MillingMachine::readCommandString(QString& textCoordinates){
     }
 }
 
-const bool MillingMachine::getFlagEmptyCoordinates(){
-    return flagEmptyCoordinates;
+void MillingMachine::G01(QString& textCoordinates){
+    double coordinate_x = currentCoordinates.x_coordinate;
+    double coordinate_y = currentCoordinates.y_coordinate;
+    double coordinate_z = currentCoordinates.z_coordinate;
+
+    while(textCoordinates.length() != 0){
+            int number_space = textCoordinates.indexOf(' ');
+            if(-1 != number_space){
+                number_space += 1;
+            }else{
+                number_space = textCoordinates.length();
+            }
+
+            if(textCoordinates[0] == 'X'){
+                coordinate_x = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
+                textCoordinates.remove(0, number_space);
+            }else if(textCoordinates[0] == 'Y'){
+                coordinate_y = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
+                textCoordinates.remove(0, number_space);
+            }else if(textCoordinates[0] == 'Z'){
+                coordinate_z = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
+                textCoordinates.remove(0, number_space);
+            }
+    }
+    listCoordinates.append(Coordinates(coordinate_x, coordinate_y, coordinate_z));
+}
+
+Segment MillingMachine::createSegment(QString& textCoordinates) const{
+    double coordinate_x = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
+    textCoordinates.remove(0, textCoordinates.indexOf(' ')+1);
+    double coordinate_y = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
+    textCoordinates.remove(0, textCoordinates.indexOf(' ')+1);
+    double coordinate_i = textCoordinates.mid(1, textCoordinates.indexOf(' ')).toDouble();
+    textCoordinates.remove(0, textCoordinates.indexOf(' ')+1);
+    double coordinate_j = textCoordinates.mid(1, textCoordinates.indexOf('\n')).toDouble();
+    textCoordinates.remove(0, textCoordinates.length());
+    Coordinates point_begin(currentCoordinates.x_coordinate, currentCoordinates.y_coordinate, currentCoordinates.z_coordinate);
+    Coordinates point_end(coordinate_x, coordinate_y, currentCoordinates.z_coordinate);
+    Coordinates point_center(coordinate_i, coordinate_j, 0);
+    return Segment(point_begin, point_end, point_center);
+}
+
+void MillingMachine::G02(QString& textCoordinates){
+    CrushingSegmentRight(createSegment(textCoordinates), listCoordinates);
+}
+
+void MillingMachine::G03(QString& textCoordinates){
+    CrushingSegmentLeft(createSegment(textCoordinates), listCoordinates);
 }
 
 
 void MillingMachine::openCOMport(){
-    serial->setPortName("COM3");
-    serial->setBaudRate(QSerialPort::Baud38400);
-    serial->setDataBits(QSerialPort::Data8);
-    serial->setParity(QSerialPort::NoParity);
-    serial->setStopBits(QSerialPort::OneStop);
-    serial->setFlowControl(QSerialPort::NoFlowControl);
     serial->open(QIODevice::ReadWrite);
-    connect(serial, SIGNAL(readyRead()), this, SLOT(serialRecieve()));
+    QByteArray open = QString("Open").toUtf8();
+    sendMessage(open);
 }
 
 void MillingMachine::closeCOMport(){
-    serial->close();
+    QByteArray close = QString("Close").toUtf8();
+    sendMessage(close);
 }
 
-void MillingMachine::serialRecieve(){
+void MillingMachine::receiveMessage(){
     command = serial->readAll();
-    if(nextCommand() && moving_coordinates){
-        emit mySignal();
-        sendCoordinate();
+    if(command == "Open"){
+        emit signalUnlock(true);
+    }else if(command == "Close"){
+        emit signalUnlock(false);
+        serial->close();
+    }else if(command == "Next"){
+        emit startProcessing();
     }
+}
+
+void MillingMachine::sendMessage(QByteArray& message){
+    short int checkSumm = crc16(message);
+    message.append(checkSumm & 0xFF);
+    message.append((checkSumm >> 8) & 0xFF);
+    serial->write(message, 20);
 }
 
 void MillingMachine::sendCoordinate(){
-    char char_crd[18];
-    ConvertToChar(char_crd, currentCoordinates);
-    serial->write(char_crd, 18);
-    serial->waitForBytesWritten();
-    command.clear();
+    QByteArray byteCoordinates;
+    ConvertToByte(byteCoordinates, currentCoordinates);
+    sendMessage(byteCoordinates);
 }
 
-bool MillingMachine::nextCommand(){
-    if(command == "Next" || command == "Start"){
-        return true;
-    }
-    return false;
+void MillingMachine::ConvertToByte(QByteArray& byteCrd, const Coordinates& coordinates){
+    std::string str_crd_x = std::to_string(coordinates.x_coordinate);
+    WriteChar(byteCrd, str_crd_x);
+    std::string str_crd_y = std::to_string(coordinates.y_coordinate);
+    WriteChar(byteCrd, str_crd_y);
+    std::string str_crd_z = std::to_string(coordinates.z_coordinate);
+    WriteChar(byteCrd, str_crd_z);
 }
 
-void MillingMachine::change_moving_coordinates(bool mv_crd){
-    moving_coordinates = mv_crd;
-}
-
-void MillingMachine::WriteChar(char* char_crd, std::string& str_crd){
+void MillingMachine::WriteChar(QByteArray& byteCrd, std::string& str_crd) const{
 
     if(str_crd[0] == '-'){
-            char_crd[0] = '-';
-            str_crd.erase(0, 1);
+        byteCrd.append('-');
+        str_crd.erase(0, 1);
     } else{
-            char_crd[0] = '+';
+        byteCrd.append('+');
     }
 
     size_t index_point = str_crd.find('.');
-    switch (index_point) {
-    case 3:
-            *(char_crd + 1) = str_crd[0];
-            *(char_crd + 2) = str_crd[1];
-            *(char_crd + 3) = str_crd[2];
-            break;
-    case 2:
-            *(char_crd + 1) = '0';
-            *(char_crd + 2) = str_crd[0];
-            *(char_crd + 3) = str_crd[1];
-            break;
-    case 1:
-            *(char_crd + 1) = '0';
-            *(char_crd + 2) = '0';
-            *(char_crd + 3) = str_crd[0];
-            break;
-    default:
-            break;
+    for(size_t i = 0; i < 3 - index_point; i++){ // заполняет нулями первые символы
+        byteCrd.append('0');
     }
-    *(char_crd + 4) = str_crd[index_point+1];
-    *(char_crd + 5) = str_crd[index_point+2];
+    for(size_t i = 0; i < index_point; i++){ // заполняет числами
+        byteCrd.append(str_crd.at(i));
+    }
+    byteCrd.append(str_crd.at(index_point+1));
+    byteCrd.append(str_crd.at(index_point+2));
 }
 
-void MillingMachine::ConvertToChar(char* char_crd, const Coordinates& coordinates){
-    std::string str_crd_x = std::to_string(coordinates.x_coordinate);
-    WriteChar(char_crd, str_crd_x);
-    std::string str_crd_y = std::to_string(coordinates.y_coordinate);
-    WriteChar(char_crd+6, str_crd_y);
-    std::string str_crd_z = std::to_string(coordinates.z_coordinate);
-    WriteChar(char_crd+12, str_crd_z);
-}
+

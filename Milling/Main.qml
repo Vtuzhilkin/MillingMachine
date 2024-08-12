@@ -23,14 +23,37 @@ Window {
     property double relative_z: 0
 
     property int i: 0
-    property int number_lines: 0
     property var coordinates: []
+    property bool operating: false
 
     Connections{
         target: millingMachine
-        onMySignal:{
+        function onStartProcessing(){ // Сигнал из C++ файла для старта обработки и анимации
             startMoving.start()
         }
+
+        function onSignalUnlock(open){ // Сигнал из C++ для разблокировки/блокировки кнопок после открытия/закрытия COM-порта
+            if(i === 0){
+                start.enabled = open;
+                enabledManualOperating(open);
+            }else{
+                continue_moving.enabled = open
+            }
+            open_com_port.enabled = !open
+            close_com_port.enabled = open
+        }
+    }
+
+    function enabledManualOperating(open_){
+        goToZero.enabled = open_;
+        setRelativeCoordinates.enabled = open_;
+        posmoveX.enabled = open_
+        negmoveX.enabled = open_
+        posmoveY.enabled = open_
+        negmoveY.enabled = open_
+        posmoveZ.enabled = open_
+        negmoveZ.enabled = open_
+        movemachine.enabled = open_
     }
 
     SequentialAnimation{
@@ -38,18 +61,26 @@ Window {
         running: false
         ScriptAction{
             script: {
-                if(i < number_lines){
-                    if(millingMachine.getFlagEmptyCoordinates()){
-                        millingMachine.readCommandString(coordinates[i]);
-                        ++i;
+                if(operating){
+                    if(i < list_coordinates.lineCount){
+                        if(millingMachine.emptyListCoordinates()){
+                            millingMachine.readCommandString(coordinates[i]);
+                            ++i;
+                        }
+                        millingMachine.getNextCoordinate();
+                        next_crd_x = millingMachine.getCoordinateX() + relative_x;
+                        next_crd_y = millingMachine.getCoordinateY() + relative_y;
+                        next_crd_z = millingMachine.getCoordinateZ() + relative_z;
+                        millingMachine.sendCoordinate();
+                        console.log(next_crd_x, " ", next_crd_y, " ", next_crd_z)
+                        move.start()
+                    }else{
+                        i = 0;
+                        list_coordinates.enabled = true
+                        stop.enabled = false
+                        start.enabled = true
+                        enabledManualOperating(true)
                     }
-                    millingMachine.getNextCoordinate();
-                    next_crd_x = millingMachine.getCoordinateX() + relative_x;
-                    next_crd_y = millingMachine.getCoordinateY() + relative_y;
-                    next_crd_z = millingMachine.getCoordinateZ() + relative_z;
-                    move.start()
-                } else{
-                    millingMachine.change_moving_coordinates(0)
                 }
             }
         }
@@ -294,6 +325,7 @@ Window {
 
         Button{
             id: goToZero
+            enabled: false
             text: "Ноль"
             width: parent.width*1/8
             height: parent.height/6
@@ -368,6 +400,7 @@ Window {
         Button{
             id: setRelativeCoordinates
             text: "Ноль"
+            enabled: false
             width: parent.width*1/8
             height: parent.height/6
             anchors.top: relativeCoordinate.top
@@ -412,6 +445,7 @@ Window {
 
         Button {
             id: posmoveX
+            enabled: false
             width: parent.width/8
             height: textmoveX.height
             anchors.top: textmoveX.top
@@ -440,6 +474,7 @@ Window {
         }
         Button {
             id: negmoveX
+            enabled: false
             width: parent.width/8
             height: textmoveX.height
             anchors.bottom: textmoveX.bottom
@@ -490,6 +525,7 @@ Window {
 
         Button {
             id: posmoveY
+            enabled: false
             width: parent.width/8
             height: textmoveY.height
             anchors.top: textmoveY.top
@@ -518,6 +554,7 @@ Window {
         }
         Button {
             id: negmoveY
+            enabled: false
             width: parent.width/8
             height: textmoveY.height
             anchors.bottom: textmoveY.bottom
@@ -565,6 +602,7 @@ Window {
         }
         Button {
             id: posmoveZ
+            enabled: false
             width: parent.width/8
             height: textmoveZ.height
             anchors.top: textmoveZ.top
@@ -593,6 +631,7 @@ Window {
         }
         Button {
             id: negmoveZ
+            enabled: false
             width: parent.width/8
             height: textmoveZ.height
             anchors.bottom: textmoveZ.bottom
@@ -641,6 +680,7 @@ Window {
 
         Button {
             id: movemachine
+            enabled: false
             width: parent.width/2
             height: parent.height/6
             anchors.top: textmove.top
@@ -687,6 +727,7 @@ Window {
         color: "#8c8c8ccc"
         Button {
             id: start
+            enabled: false
             anchors.top: buttons.top
             anchors.left: buttons.left
             height: parent.height / 2
@@ -694,11 +735,21 @@ Window {
             text: "Старт"
             font.pixelSize: height / 3
             onClicked: {
-                i = 0
-                coordinates = list_coordinates.text.split("\n")
-                number_lines = list_coordinates.lineCount
-                millingMachine.change_moving_coordinates(1)
-                millingMachine.sendCoordinate()
+                if(list_coordinates.text !== ""){
+                    console.log(list_coordinates.lineCount)
+                    operating = true
+                    start.enabled = false
+                    stop.enabled = true
+                    open_com_port.enabled = false
+                    close_com_port.enabled = false
+                    continue_moving.enabled = false
+                    list_coordinates.enabled = false
+                    enabledManualOperating(false)
+
+                    i = 0
+                    coordinates = list_coordinates.text.split("\n")
+                    startMoving.start()
+                }
             }
 
             background: Rectangle {
@@ -715,6 +766,7 @@ Window {
         }
         Button {
             id: stop
+            enabled: false
             anchors.top: parent.top
             anchors.left: start.right
             height: parent.height / 2
@@ -722,8 +774,10 @@ Window {
             text: "Стоп"
             font.pixelSize: height / 3
             onClicked: {
-                moving_list = false
-                millingMachine.change_moving_coordinates(0)
+                operating = false
+                stop.enabled = false
+                close_com_port.enabled = true
+                continue_moving.enabled = true
             }
 
             background: Rectangle {
@@ -740,6 +794,7 @@ Window {
         }
         Button {
             id: continue_moving
+            enabled: false
             anchors.top: parent.top
             anchors.left: stop.right
             height: parent.height / 2
@@ -747,7 +802,11 @@ Window {
             text: "Продолжить"
             font.pixelSize: height / 3
             onClicked: {
-                moving_list = true
+                operating = true
+                stop.enabled = true
+                continue_moving.enabled = false
+                close_com_port.enabled = false
+                startMoving.start()
             }
 
             background: Rectangle {
@@ -789,6 +848,7 @@ Window {
         }
         Button {
             id: close_com_port
+            enabled: false
             anchors.bottom: parent.bottom
             anchors.right: parent.right
             height: parent.height / 2

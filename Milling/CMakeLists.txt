@@ -13,6 +13,8 @@ qt_add_executable(appMilling
     millingmachine.cpp
     segment.h
     segment.cpp
+    CRC16.h
+    CRC16.cpp
 )
 
 qt_add_qml_module(appMilling

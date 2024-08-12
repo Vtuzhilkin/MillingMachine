@@ -21,9 +21,10 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-#include "StepperMotor.h"
-#include "Machine.h"
-#include "string.h"
+#include <StepperMotor.h>
+#include <Machine.h>
+#include <string.h>
+#include <CRC16.h>
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -75,9 +76,12 @@ StepperMotor motorZ(1, false, 8.0, 32);
 int main(void)
 	{
   /* USER CODE BEGIN 1 */
-	uint8_t data[18];
+	uint8_t data[20];
 	uint8_t next_coordinate[] = "Next";
 	uint8_t start_command[] = "Start";
+	uint8_t open_command[] = "Open";
+	uint8_t close_command[] = "Close";
+	bool openCOMPort = false;
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -116,24 +120,36 @@ int main(void)
 	
 	Machine machineMilling(&motorX, &motorY, &motorZ);
 	
-	HAL_UART_Transmit(&huart1, start_command, 5, 100);
-	HAL_UART_Receive_IT(&huart1, data, 18);
+	//HAL_UART_Transmit(&huart1, start_command, 5, 100);
+	//HAL_UART_Receive_IT(&huart1, data, 18);
 	
   /* USER CODE END 2 */
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-
-		if(huart1.Instance->CR3 == 0 && machineMilling.ReadPermissionNextCoordinate()){
-			HAL_UART_Receive_IT(&huart1, data, 18);
-			machineMilling.ReadNextCoordinate(data);
-			machineMilling.CalculateNumberStepsAndVelocity();
-		}
-		if(machineMilling.CheckStopMotors() && machineMilling.SetPermissionNextCoordinate()){
-			machineMilling.SetNextCoordinatesAndVelocity();
-			machineMilling.Start();
- 			HAL_UART_Transmit(&huart1, next_coordinate, 4, 100);
+		if(openCOMPort){
+			if(huart1.Instance->CR3 == 0 && machineMilling.ReadPermissionNextCoordinate()){
+				HAL_UART_Receive_IT(&huart1, data, 20);
+				if(checkMessage(data,18)){
+					machineMilling.ReadNextCoordinate(data);
+					machineMilling.CalculateNumberStepsAndVelocity();
+				}else if(data[0] == 'C' && data[1] == 'l' && data[2] == 'o' && data[3] == 's' && data[4] == 'e' && checkMessage(data,5)){
+					HAL_UART_Transmit(&huart1, close_command, 5, 100);
+					openCOMPort = false;
+				} 
+			}
+			if(machineMilling.CheckStopMotors() && machineMilling.SetPermissionNextCoordinate()){
+				machineMilling.SetNextCoordinatesAndVelocity();
+				machineMilling.Start();
+				HAL_UART_Transmit(&huart1, next_coordinate, 4, 100);
+			}
+		}else if(huart1.Instance->CR3 == 0){
+			HAL_UART_Receive_IT(&huart1, data, 20);
+			if(data[0] == 'O' && data[1] == 'p' && data[2] == 'e' && data[3] == 'n' && checkMessage(data, 4)){
+				HAL_UART_Transmit(&huart1, open_command, 4, 100);
+				openCOMPort = true;
+			}
 		}
 		
 

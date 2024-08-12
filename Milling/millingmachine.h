@@ -7,6 +7,8 @@
 #include <segment.h>
 #include <QtSerialPort/QSerialPort>
 #include <QtSerialPort/QSerialPortInfo>
+#include <CRC16.h>
+#include <QThread>
 
 
 class MillingMachine : public QObject
@@ -16,25 +18,30 @@ private:
     Coordinates currentCoordinates;
     QQueue<Coordinates> listCoordinates;
     int g_code_command;
-    bool flagEmptyCoordinates = true;
-    bool moving_coordinates = false;
     QSerialPort *serial;
     QByteArray command;
+    bool openCOMPort = false;
+
+    Segment createSegment(QString &textCoordinates) const;
+
 public:
     explicit MillingMachine(QObject *parent = nullptr);
     ~MillingMachine();
 
 signals:
-    void mySignal();
+    void startProcessing();
+    void signalUnlock(bool);
+
 public slots:
     Coordinates transferTextToCoordinate(QString&);
     void readCoordinates(QString);
+    void receiveMessage();
     const double getCoordinateX();
     const double getCoordinateY();
     const double getCoordinateZ();
     void getNextCoordinate();
     void readCommandString(QString&);
-    const bool getFlagEmptyCoordinates();
+    bool emptyListCoordinates() const;
 
     void G01(QString& textCoordinates);
     void G02(QString& textCoordinates);
@@ -42,12 +49,11 @@ public slots:
 
     void openCOMport();
     void closeCOMport();
-    void serialRecieve();
+    void sendMessage(QByteArray&);
     void sendCoordinate();
-    bool nextCommand();
-    void change_moving_coordinates(bool);
-    void ConvertToChar(char*, const Coordinates&);
-    void WriteChar(char*, std::string&);
+    void ConvertToByte(QByteArray&, const Coordinates&);
+    void WriteChar(QByteArray& byteCrd, std::string&) const;
+
 
 };
 

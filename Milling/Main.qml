@@ -321,18 +321,16 @@ Window {
                 verticalAlignment: Text.AlignVCenter
             }
         }
-
-
-        Button{
+        ButtonTemplate {
             id: goToZero
             enabled: false
-            text: "Ноль"
             width: parent.width*1/8
             height: parent.height/6
             anchors.top: currentCoordinateText.top
             anchors.left: currentCoordinate.right
-            font.pixelSize: height / 2
-            onClicked:{
+            defaultFontSize: height / 2
+            button_text: "Ноль"
+            onButtonClicked: {
                 next_crd_x = 0
                 next_crd_y = 0
                 next_crd_z = 0
@@ -342,18 +340,6 @@ Window {
                 millingMachine.readCoordinates("X0Y0Z0")
                 millingMachine.sendCoordinate()
                 move.start()
-            }
-
-            background: Rectangle {
-                color: "#FFA500"
-                radius: 10
-                Rectangle {
-                            width: parent.width
-                            height: parent.height
-                            radius: 10
-                            color: "transparent"
-                            border.width: 1
-                        }
             }
         }
         Rectangle{
@@ -394,33 +380,22 @@ Window {
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
             }
-
-        }
-
-        Button{
+        }        
+        ButtonTemplate {
             id: setRelativeCoordinates
-            text: "Ноль"
             enabled: false
             width: parent.width*1/8
             height: parent.height/6
             anchors.top: relativeCoordinate.top
             anchors.left: relativeCoordinate.right
-            font.pixelSize: height / 2
-            onClicked:{
-                relative_x = spindel.x
-                relative_y = spindelWithGuides.z
-                relative_z = table.y
-            }
-            background: Rectangle {
-                color: "#FFA500"
-                radius: 10
-                Rectangle {
-                            width: parent.width
-                            height: parent.height
-                            radius: 10
-                            color: "transparent"
-                            border.width: 1
-                        }
+            defaultFontSize: height / 2
+            button_text: "Ноль"
+            onButtonClicked: {
+                if(spindel.x < 150 && millingMachine.nextCommand()){
+                    relative_x = spindel.x
+                    relative_y = spindelWithGuides.z
+                    relative_z = table.y
+                }
             }
         }
         Rectangle{
@@ -440,19 +415,17 @@ Window {
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter
             }
-
         }
-
-        Button {
+        ButtonTemplate {
             id: posmoveX
             enabled: false
             width: parent.width/8
             height: textmoveX.height
             anchors.top: textmoveX.top
             anchors.left: textmoveX.right
-            text: "+"
-            font.pixelSize: height
-            onClicked: {
+            defaultFontSize: height
+            button_text: "+"
+            onButtonClicked: {
                 if(spindel.x < 150 && millingMachine.nextCommand()){
                     next_crd_x += k
                     millingMachine.readCoordinates("X" + next_crd_x + "Y" + next_crd_y + "Z" + next_crd_z)
@@ -460,48 +433,25 @@ Window {
                     move.start()
                 }
             }
-            background: Rectangle {
-                color: "#FFA500"
-                radius: 10
-                Rectangle {
-                            width: parent.width
-                            height: parent.height
-                            radius: 10
-                            color: "transparent"
-                            border.width: 1
-                        }
-            }
         }
-        Button {
+        ButtonTemplate {
             id: negmoveX
             enabled: false
             width: parent.width/8
             height: textmoveX.height
             anchors.bottom: textmoveX.bottom
             anchors.left: posmoveX.right
-            text: "-"
-            font.pixelSize: height
-            onClicked: {
-               if(spindel.x > 0 && millingMachine.nextCommand()){
-                   next_crd_x -= k
-                   millingMachine.readCoordinates("X" + next_crd_x + "Y" + next_crd_y + "Z" + next_crd_z)
-                   millingMachine.sendCoordinate()
-                   move.start()
-                }
-            }
-            background: Rectangle {
-                color: "#FFA500"
-                radius: 10
-                Rectangle {
-                            width: parent.width
-                            height: parent.height
-                            radius: 10
-                            color: "transparent"
-                            border.width: 1
-                        }
+            defaultFontSize: height
+            button_text: "-"
+            onButtonClicked: {
+                if(spindel.x > 0 && millingMachine.nextCommand()){
+                    next_crd_x -= k
+                    millingMachine.readCoordinates("X" + next_crd_x + "Y" + next_crd_y + "Z" + next_crd_z)
+                    millingMachine.sendCoordinate()
+                    move.start()
+                 }
             }
         }
-
         Rectangle{
             id: textmoveY
             width: parent.width*3/4
@@ -520,19 +470,16 @@ Window {
                 verticalAlignment: Text.AlignVCenter
             }
         }
-
-
-
-        Button {
+        ButtonTemplate {
             id: posmoveY
             enabled: false
             width: parent.width/8
             height: textmoveY.height
             anchors.top: textmoveY.top
             anchors.left: textmoveY.right
-            text: "+"
-            font.pixelSize: height
-            onClicked: {
+            defaultFontSize: height
+            button_text: "+"
+            onButtonClicked: {
                 if(spindelWithGuides.z < 180 && millingMachine.nextCommand()){
                     next_crd_y += k
                     millingMachine.readCoordinates("X" + next_crd_x + "Y" + next_crd_y + "Z" + next_crd_z)
@@ -540,45 +487,23 @@ Window {
                     move.start()
                 }
             }
-            background: Rectangle {
-                color: "#FFA500"
-                radius: 10
-                Rectangle {
-                            width: parent.width
-                            height: parent.height
-                            radius: 10
-                            color: "transparent"
-                            border.width: 1
-                        }
-            }
         }
-        Button {
+        ButtonTemplate {
             id: negmoveY
             enabled: false
             width: parent.width/8
             height: textmoveY.height
             anchors.bottom: textmoveY.bottom
             anchors.left: posmoveY.right
-            text: "-"
-            font.pixelSize: height
-            onClicked: {
+            defaultFontSize: height
+            button_text: "-"
+            onButtonClicked: {
                 if(spindelWithGuides.z > 0 && millingMachine.nextCommand()){
                     next_crd_y -= k
                     millingMachine.readCoordinates("X" + next_crd_x + "Y" + next_crd_y + "Z" + next_crd_z)
                     millingMachine.sendCoordinate()
                     move.start()
                 }
-            }
-            background: Rectangle {
-                color: "#FFA500"
-                radius: 10
-                Rectangle {
-                            width: parent.width
-                            height: parent.height
-                            radius: 10
-                            color: "transparent"
-                            border.width: 1
-                        }
             }
         }
         Rectangle{
@@ -600,16 +525,16 @@ Window {
             }
 
         }
-        Button {
+        ButtonTemplate {
             id: posmoveZ
             enabled: false
             width: parent.width/8
             height: textmoveZ.height
             anchors.top: textmoveZ.top
             anchors.left: textmoveZ.right
-            text: "+"
-            font.pixelSize: height
-            onClicked: {
+            defaultFontSize: height
+            button_text: "+"
+            onButtonClicked: {
                 if(table.y > -160 && millingMachine.nextCommand()){
                     next_crd_z -= k
                     millingMachine.readCoordinates("X" + next_crd_x + "Y" + next_crd_y + "Z" + -next_crd_z)
@@ -617,45 +542,23 @@ Window {
                     move.start()
                 }
             }
-            background: Rectangle {
-                color: "#FFA500"
-                radius: 10
-                Rectangle {
-                            width: parent.width
-                            height: parent.height
-                            radius: 10
-                            color: "transparent"
-                            border.width: 1
-                        }
-            }
         }
-        Button {
+        ButtonTemplate {
             id: negmoveZ
             enabled: false
             width: parent.width/8
             height: textmoveZ.height
             anchors.bottom: textmoveZ.bottom
             anchors.left: posmoveZ.right
-            text: "-"
-            font.pixelSize: height
-            onClicked: {
+            defaultFontSize: height
+            button_text: "-"
+            onButtonClicked: {
                 if(table.y < 0 && millingMachine.nextCommand()){
                     next_crd_z += k
                     millingMachine.readCoordinates("X" + next_crd_x + "Y" + next_crd_y + "Z" + -next_crd_z)
                     millingMachine.sendCoordinate()
                     move.start()
                 }
-            }
-            background: Rectangle {
-                color: "#FFA500"
-                radius: 10
-                Rectangle {
-                            width: parent.width
-                            height: parent.height
-                            radius: 10
-                            color: "transparent"
-                            border.width: 1
-                        }
             }
         }
         Rectangle{
@@ -677,17 +580,16 @@ Window {
                 verticalAlignment: Text.AlignVCenter
             }
         }
-
-        Button {
+        ButtonTemplate {
             id: movemachine
             enabled: false
             width: parent.width/2
             height: parent.height/6
             anchors.top: textmove.top
             anchors.left: textmove.right
-            text: "Переместить"
-            font.pixelSize: height / 2
-            onClicked: {
+            defaultFontSize: height / 2
+            button_text: "Переместить"
+            onButtonClicked: {
                 if(millingMachine.nextCommand()){
                     millingMachine.readCoordinates(movetext.text);
                     next_crd_x = millingMachine.getCoordinateX();
@@ -697,14 +599,8 @@ Window {
                     move.start()
                 }
             }
-            background: Rectangle {
-                color: movemachine.pressed ? "#FF4500": movemachine.hovered ? "#FF8C00": "#FFA500"
-                width: parent.width
-                height: parent.height
-                radius: 10
-                border.width: 1
-            }
         }
+
     }
     ScrollView{
         id: scrollViewCoordinates
@@ -725,16 +621,15 @@ Window {
         width: parent.width / 3
         height: parent.height / 6
         color: "#8c8c8ccc"
-        Button {
+        ButtonTemplate {
             id: start
             enabled: false
             anchors.top: buttons.top
             anchors.left: buttons.left
             height: parent.height / 2
             width: parent.width / 3
-            text: "Старт"
-            font.pixelSize: height / 3
-            onClicked: {
+            button_text: "Старт"
+            onButtonClicked: {
                 if(list_coordinates.text !== ""){
                     console.log(list_coordinates.lineCount)
                     operating = true
@@ -751,125 +646,65 @@ Window {
                     startMoving.start()
                 }
             }
-
-            background: Rectangle {
-                color: "#FFA500"
-                radius: 10
-                Rectangle {
-                            width: parent.width
-                            height: parent.height
-                            radius: 10
-                            color: "transparent"
-                            border.width: 1
-                        }
-            }
         }
-        Button {
+        ButtonTemplate {
             id: stop
             enabled: false
             anchors.top: parent.top
             anchors.left: start.right
             height: parent.height / 2
             width: parent.width / 3
-            text: "Стоп"
-            font.pixelSize: height / 3
-            onClicked: {
+            button_text: "Стоп"
+            onButtonClicked: {
                 operating = false
                 stop.enabled = false
                 close_com_port.enabled = true
                 continue_moving.enabled = true
             }
-
-            background: Rectangle {
-                color: "#FFA500"
-                radius: 10
-                Rectangle {
-                            width: parent.width
-                            height: parent.height
-                            radius: 10
-                            color: "transparent"
-                            border.width: 1
-                        }
-            }
         }
-        Button {
+        ButtonTemplate {
             id: continue_moving
             enabled: false
             anchors.top: parent.top
             anchors.left: stop.right
             height: parent.height / 2
             width: parent.width / 3
-            text: "Продолжить"
-            font.pixelSize: height / 3
-            onClicked: {
+            button_text: "Продолжить"
+            onButtonClicked: {
                 operating = true
                 stop.enabled = true
                 continue_moving.enabled = false
                 close_com_port.enabled = false
                 startMoving.start()
             }
-
-            background: Rectangle {
-                color: "#FFA500"
-                radius: 10
-                Rectangle {
-                            width: parent.width
-                            height: parent.height
-                            radius: 10
-                            color: "transparent"
-                            border.width: 1
-                        }
-            }
         }
-        Button {
+        ButtonTemplate {
             id: open_com_port
             anchors.bottom: parent.bottom
             anchors.left: parent.left
             height: parent.height / 2
             width: parent.width / 2
-
-            text: "Открыть COM-port"
-            font.pixelSize: height / 3
-            onClicked: {
+            defaultColor: "#20B2AA"
+            pressColor: "#18867F"
+            enterColor: "#48D2CC"
+            button_text: "Открыть COM-port"
+            onButtonClicked: {
                 millingMachine.openCOMport()
             }
-
-            background: Rectangle {
-                color: "#20B2AA"
-                radius: 10
-                Rectangle {
-                            width: parent.width
-                            height: parent.height
-                            radius: 10
-                            color: "transparent"
-                            border.width: 1
-                        }
-            }
         }
-        Button {
+        ButtonTemplate {
             id: close_com_port
             enabled: false
             anchors.bottom: parent.bottom
             anchors.right: parent.right
             height: parent.height / 2
             width: parent.width / 2
-
-            text: "Закрыть COM-port"
-            font.pixelSize: height / 3
-            onClicked: {
+            defaultColor: "#20B2AA"
+            pressColor: "#18867F"
+            enterColor: "#48D2CC"
+            button_text: "Закрыть COM-port"
+            onButtonClicked: {
                 millingMachine.closeCOMport()
-            }
-
-            background: Rectangle {
-                color: "#20B2AA"
-                radius: 10
-                Rectangle {
-                            width: parent.width
-                            height: parent.height
-                            radius: 10
-                            color: "transparent"
-                            border.width: 1
-                        }
             }
         }
     }

@@ -25,6 +25,7 @@ qt_add_qml_module(appMilling
     RESOURCES resources/YGuides.mesh
     RESOURCES resources/Spindel.mesh
     RESOURCES resources/Table.mesh
+    QML_FILES ButtonTemplate.qml
 )
 
 set_target_properties(appMilling PROPERTIES

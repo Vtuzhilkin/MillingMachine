@@ -10,6 +10,8 @@ Window {
     visible: true
     title: qsTr("Milling")
     visibility: "Maximized"
+    minimumHeight: 380
+    minimumWidth: 640
     property int distance: 2000
     property int k: 1
     property int coef_time: 250
@@ -71,12 +73,14 @@ Window {
                         next_crd_x = millingMachine.getCoordinateX() + relative_x;
                         next_crd_y = millingMachine.getCoordinateY() + relative_y;
                         next_crd_z = millingMachine.getCoordinateZ() + relative_z;
+                        move.restart()
                         millingMachine.sendCoordinate();
-                        console.log(next_crd_x, " ", next_crd_y, " ", next_crd_z)
-                        move.start()
+                        console.log(i, next_crd_x, " ", next_crd_y, " ", next_crd_z)
                     }else{
+                        console.log(i)
                         i = 0;
                         list_coordinates.enabled = true
+                        close_com_port.enabled = true
                         stop.enabled = false
                         start.enabled = true
                         enabledManualOperating(true)
@@ -311,9 +315,9 @@ Window {
             color: "#20B2AA"
             border.width: 1
             Text{
-                text: "X" + Math.round(spindel.x,3)
-                      + " Y" + Math.round(spindelWithGuides.z,3)
-                      + " Z" + Math.round(-table.y,3)
+                text: "X" + Number(spindel.x).toFixed(2)
+                      + " Y" + Number(spindelWithGuides.z).toFixed(2)
+                      + " Z" + Number(-table.y).toFixed(2)
                 width: parent.width
                 height: parent.height
                 font.pixelSize: height / 2
@@ -373,9 +377,9 @@ Window {
             Text{
                 width: parent.width
                 height: parent.height
-                text: "X" + Math.round(spindel.x-relative_x,3)
-                      + " Y" + Math.round(spindelWithGuides.z-relative_y,3)
-                      + " Z" + Math.round(-(table.y-relative_z),3)
+                text: "X" + Number(spindel.x-relative_x).toFixed(2)
+                      + " Y" + Number(spindelWithGuides.z-relative_y).toFixed(2)
+                      + " Z" + Number(-(table.y-relative_z)).toFixed(2)
                 font.pixelSize: height / 2
                 horizontalAlignment: Text.AlignHCenter
                 verticalAlignment: Text.AlignVCenter

@@ -13,6 +13,7 @@ MillingMachine::MillingMachine(QObject *parent)
     connect(serial, SIGNAL(readyRead()), this, SLOT(receiveMessage()));
 }
 
+
 MillingMachine::~MillingMachine(){
     closeCOMport();
     delete serial;

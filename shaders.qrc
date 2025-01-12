@@ -1,0 +1,10 @@
+<RCC>
+    <qresource prefix="/">
+        <file>shaders/myeffect.frag.qsb</file>
+        <file>shaders/myeffect.vert.qsb</file>
+        <file>shaders/gradient.frag.qsb</file>
+        <file>shaders/gradientShadow.frag.qsb</file>
+        <file>fonts/Montserrat-Medium.ttf</file>
+        <file>models/MachineFrame.mesh</file>
+    </qresource>
+</RCC>

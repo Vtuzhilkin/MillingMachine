@@ -10,12 +10,14 @@ qt_standard_project_setup(REQUIRES 6.5)
 set(RESOURCE_FILES resources.qrc)
 
 set(CMAKE_AUTORCC ON)
+set(app_icon_resource_windows "${CMAKE_CURRENT_SOURCE_DIR}/icon.rc")
 
 qt_add_executable(appMillingMachine
     main.cpp
     shaders.qrc
     MillingMachine.h
     MillingMachine.cpp
+    ${app_icon_resource_windows}
 )
 
 qt_add_qml_module(appMillingMachine

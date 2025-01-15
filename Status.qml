@@ -2,7 +2,10 @@ GradientRectangle{
     width: 300
     height: 100
 
+    property alias ledCP: ledCOMport
+
     GradientRectangle{
+        id: ledCOMport
         x: 10
         y: 20
         width: 20

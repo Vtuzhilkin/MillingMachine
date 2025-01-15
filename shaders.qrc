@@ -6,6 +6,5 @@
         <file>shaders/gradientShadow.frag.qsb</file>
         <file>fonts/Montserrat-Medium.ttf</file>
         <file>models/MachineFrame.mesh</file>
-        <file>Icon.png</file>
     </qresource>
 </RCC>

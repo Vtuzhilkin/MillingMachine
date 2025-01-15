@@ -1,3 +1,5 @@
+import MillingMachine
+
 GradientRectangle{
     width: 300
     height: 125
@@ -22,6 +24,8 @@ GradientRectangle{
         radius: 10
         fontName: montserratFont.name
         onClicked:{
+            MillingMachine.openCOM(3);
+            rectStatus.ledCP.colorCenter = MillingMachine.getStatusCOM() ? "lightgreen" : "red"
             console.log("Open com-port")
         }
     }

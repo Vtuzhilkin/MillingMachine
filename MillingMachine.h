@@ -6,25 +6,31 @@
 #include <QObject>
 #include <QtQml/qqml.h>
 #include <QtSerialPort/QSerialPort>
+#include <QThread>
 
-class MillingMachine : public QObject
+class MillingMachine : public QThread
 {
     Q_OBJECT
     QML_SINGLETON
     QML_ELEMENT
-    QML_NAMED_ELEMENT(Miller)
+    QML_NAMED_ELEMENT(MillingMachine)
     public:
-    static MillingMachine* create(QQmlEngine *, QJSEngine *);
-    static MillingMachine* instance();
+        static MillingMachine* create(QQmlEngine *, QJSEngine *);
+        static MillingMachine* instance();
+        ~MillingMachine();
+        Q_INVOKABLE void openCOM(int numberPort);
+        Q_INVOKABLE void closeCOM(int numberPort);
+        Q_INVOKABLE bool getStatusCOM();
+
     private:
         explicit MillingMachine(QObject *parent = nullptr);
+        void run() override;
         static MillingMachine* millingMachine;
         QSerialPort* serialPort;
         bool openedPort = false;
-    private:
-        void connect(int numberPort);
-signals:
-
+        bool mThread = false;
+    signals:
+        void updateLeds();
 };
 
 

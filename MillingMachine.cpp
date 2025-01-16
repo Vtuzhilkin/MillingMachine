@@ -25,6 +25,10 @@ MillingMachine::MillingMachine(QObject *parent)
     serialPort->setStopBits(QSerialPort::OneStop);
     serialPort->setFlowControl(QSerialPort::NoFlowControl);
 
+    connect(&timerUpdate, &QTimer::timeout, this, &MillingMachine::updateLeds);
+    timerUpdate.setInterval(100);
+    timerUpdate.start();
+
     mThread = true;
     start();
 }
@@ -33,30 +37,28 @@ MillingMachine::~MillingMachine()
 {
     serialPort->close();
     mThread = false;
-    msleep(2000);
+    msleep(1000);
 }
 
 void MillingMachine::run()
 {
     while(mThread){
         if(openedPort){
-            qDebug() << "Hello";
+
         }
-        qDebug() << "Bye";
-        msleep(500);
+        msleep(100);
     }
 }
 
 void MillingMachine::openCOM(int numberPort)
 {
     serialPort->setPortName("COM" + QString::number(numberPort));
-    openedPort = serialPort->open(QIODevice::ReadWrite);
-    qDebug() << openedPort << " Here";
-
+    openedPort = !serialPort->open(QIODevice::ReadWrite);
+    messages.push_back(Message{'O'});
     emit updateLeds();
 }
 
-void MillingMachine::closeCOM(int numberPort)
+void MillingMachine::closeCOM()
 {
     openedPort = false;
     serialPort->close();

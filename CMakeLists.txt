@@ -17,6 +17,8 @@ qt_add_executable(appMillingMachine
     shaders.qrc
     MillingMachine.h
     MillingMachine.cpp
+    Message.h
+    Message.cpp
     ${app_icon_resource_windows}
 )
 

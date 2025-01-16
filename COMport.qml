@@ -7,7 +7,7 @@ GradientRectangle{
 
     GradientText{
         id: textCOMPort
-        anchors.horizontalCenter: rectCOMPort.horizontalCenter
+        anchors.horizontalCenter: parent.horizontalCenter
         y: 25
         text: "COM-port"
         fontName: montserratFont.name
@@ -24,9 +24,7 @@ GradientRectangle{
         radius: 10
         fontName: montserratFont.name
         onClicked:{
-            MillingMachine.openCOM(3);
-            rectStatus.ledCP.colorCenter = MillingMachine.getStatusCOM() ? "lightgreen" : "red"
-            console.log("Open com-port")
+            MillingMachine.openCOM(3)
         }
     }
 
@@ -40,5 +38,8 @@ GradientRectangle{
         text: "Close"
         radius: 10
         fontName: montserratFont.name
+        onClicked:{
+            MillingMachine.closeCOM()
+        }
     }
 }

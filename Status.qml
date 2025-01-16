@@ -1,8 +1,8 @@
+import MillingMachine
+
 GradientRectangle{
     width: 300
     height: 100
-
-    property alias ledCP: ledCOMport
 
     GradientRectangle{
         id: ledCOMport
@@ -11,7 +11,7 @@ GradientRectangle{
         width: 20
         height: 20
         radius: 10
-        colorCenter: "red"
+        colorCenter: MillingMachine.openedPort ? "lightgreen" : "red"
     }
 
     GradientText{

@@ -10,6 +10,7 @@
 #include <QTimer>
 #include <regex>
 #include <string>
+#include <Arc.h>
 
 struct GCode {
     int lineNumber;
@@ -39,7 +40,7 @@ class MillingMachine : public QThread
         explicit MillingMachine(QObject *parent = nullptr);
         void run() override;
         void sendMessage();
-        void addMessage(const GCode& gcode);
+        void addMessage(const GCode& gcode, const GCode& previousGCode);
         void formatedNumber(float number, QVector<unsigned char>&);
         static MillingMachine* millingMachine;
         QSerialPort* serialPort;

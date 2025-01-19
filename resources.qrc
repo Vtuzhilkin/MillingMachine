@@ -1,0 +1,20 @@
+<RCC>
+    <qresource prefix="/">
+        <file>shaders/myeffect.frag.qsb</file>
+        <file>shaders/myeffect.vert.qsb</file>
+        <file>shaders/gradient.frag.qsb</file>
+        <file>shaders/gradientShadow.frag.qsb</file>
+        <file>fonts/Montserrat-Medium.ttf</file>
+        <file>models/MachineFrame.mesh</file>
+        <file>COMport.qml</file>
+        <file>GradientButton.qml</file>
+        <file>GradientRectangle.qml</file>
+        <file>GradientText.qml</file>
+        <file>GradientTextEdit.qml</file>
+        <file>Main.qml</file>
+        <file>PositionButtons.qml</file>
+        <file>RuleButtons.qml</file>
+        <file>Status.qml</file>
+        <file>Window3D.qml</file>
+    </qresource>
+</RCC>

@@ -79,6 +79,7 @@ bool MillingMachine::getStatusCOM()
 
 void MillingMachine::startMilling(const QStringList& listCommands)
 {
+    GCode previousGCode;
     for(QString qline: listCommands){
         std::string line = qline.toStdString();
         GCode gcode;
@@ -99,6 +100,8 @@ void MillingMachine::startMilling(const QStringList& listCommands)
             // Если есть координата Z, получаем её
             if (!match[5].str().empty()) {
                 gcode.Z = std::stof(match[5].str());
+            }else{
+                gcode.Z = previousGCode.Z;
             }
             // Если это G02, то получаем I, J, K
             if (gcode.function == 2) {
@@ -107,19 +110,32 @@ void MillingMachine::startMilling(const QStringList& listCommands)
                 if (!match[10].str().empty()) gcode.K = std::stof(match[11].str());
             }
         }
-        addMessage(gcode);
+        addMessage(gcode, previousGCode);
+        previousGCode = gcode;
         //qDebug() << gcode.lineNumber << " " << gcode.function << " " << gcode.X << " " <<gcode.Y << " " << gcode.Z << " " << gcode.I << " " <<gcode.J << " " << gcode.K;
     }
 }
 
 
-void MillingMachine::addMessage(const GCode& gcode){
+void MillingMachine::addMessage(const GCode& gcode, const GCode& previousGCode){
     if(gcode.function == 1){
         QVector<unsigned char> result;
         formatedNumber(gcode.X, result);
         formatedNumber(gcode.Y, result);
         formatedNumber(gcode.Z, result);
         messages.push_back(Message{'N', result.size(), result});
+    }else if(gcode.function == 2){
+        Arc arc(Point{previousGCode.X, previousGCode.Y, previousGCode.Z},
+                Point{gcode.X, gcode.Y, gcode.Z},
+                Point{gcode.X - gcode.I, gcode.Y - gcode.J, gcode.Z - gcode.K});
+        for(const Point& point: arc.getArcPoints()){
+            QVector<unsigned char> result;
+            formatedNumber(point.x, result);
+            formatedNumber(point.y, result);
+            formatedNumber(point.z, result);
+            qDebug() << point.x << " " << point.y << " " << point.z;
+            messages.push_back(Message{'N', result.size(), result});
+        }
     }
 }
 

@@ -14,27 +14,19 @@ set(app_icon_resource_windows "${CMAKE_CURRENT_SOURCE_DIR}/icon.rc")
 
 qt_add_executable(appMillingMachine
     main.cpp
-    shaders.qrc
+    resources.qrc
     MillingMachine.h
     MillingMachine.cpp
     Message.h
     Message.cpp
+    Arc.h
+    Arc.cpp
     ${app_icon_resource_windows}
 )
 
 qt_add_qml_module(appMillingMachine
     URI MillingMachine
     VERSION 1.0
-    QML_FILES Main.qml
-    QML_FILES GradientRectangle.qml
-    QML_FILES GradientButton.qml
-    QML_FILES GradientText.qml
-    QML_FILES GradientTextEdit.qml
-    QML_FILES COMport.qml
-    QML_FILES RuleButtons.qml
-    QML_FILES PositionButtons.qml
-    QML_FILES Status.qml
-    QML_FILES Window3D.qml
 )
 
 # Qt for iOS sets MACOSX_BUNDLE_GUI_IDENTIFIER automatically since Qt 6.1.

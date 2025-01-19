@@ -1,13 +1,40 @@
 #include "Message.h"
+#include <QDebug>
 
 Message::Message(unsigned char opCode)
-    : operationCode(opCode), dataLength(0), data(), crc1(0), crc2(0) {
-    calculateCRC();
+    : operationCode(opCode), dataLength(0) {
+    uint16_t crc = calculateCRC();
+    crc1 = crc & 0xFF;
+    crc2 = (crc >> 8) & 0xFF;
 }
 
 Message::Message(unsigned char opCode, unsigned char length, const QVector<unsigned char> &inputData)
-    : operationCode(opCode), dataLength(length), data(inputData), crc1(0), crc2(0) {
-    calculateCRC();
+    : operationCode(opCode), dataLength(length), data(inputData) {
+    uint16_t crc = calculateCRC();
+    crc1 = crc & 0xFF;
+    crc2 = (crc >> 8) & 0xFF;
+}
+
+Message::Message(const QByteArray &byteArray): operationCode(0), dataLength(0), crc1(0), crc2(0)
+{
+    if (byteArray.size() < 4) {
+        return;
+    }
+
+    operationCode = byteArray[0];
+    dataLength = byteArray[1];
+
+    if (byteArray.size() >= 2 + dataLength) {
+        data.resize(dataLength);
+        for (int i = 0; i < dataLength; ++i) {
+            data[i] = byteArray[2 + i];
+        }
+    }
+
+    if (byteArray.size() >= 2 + dataLength + 2) {
+        crc1 = byteArray[2 + dataLength];
+        crc2 = byteArray[3 + dataLength];
+    }
 }
 
 QByteArray Message::toQByteArray() const {
@@ -22,7 +49,7 @@ QByteArray Message::toQByteArray() const {
     return result;
 }
 
-void Message::calculateCRC() {
+uint16_t Message::calculateCRC() const {
     uint16_t crc = 0xFFFF;
 
     crc = updateCRC(crc, operationCode);
@@ -31,13 +58,25 @@ void Message::calculateCRC() {
     for (unsigned char byte : data) {
         crc = updateCRC(crc, byte);
     }
-
-    crc1 = crc & 0xFF;
-    crc2 = (crc >> 8) & 0xFF;
+    return crc;
 }
 
-uint16_t Message::updateCRC(uint16_t crc, unsigned char byte) {
+uint16_t Message::updateCRC(uint16_t crc, unsigned char byte) const{
     uint16_t tmp = crc ^ byte;
     crc = (crc >> 8) ^ tableCRC16[tmp & 0xFF];
     return crc;
+}
+
+bool Message::checkCRC() const
+{
+    if(operationCode == 0){
+        return false;
+    }
+
+    uint16_t crc = calculateCRC();
+
+    unsigned char calculatedCRC1 = crc & 0xFF;
+    unsigned char calculatedCRC2 = (crc >> 8) & 0xFF;
+
+    return calculatedCRC1 == crc1 && calculatedCRC2 == crc2;
 }

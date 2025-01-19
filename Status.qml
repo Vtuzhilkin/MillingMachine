@@ -62,7 +62,7 @@ GradientRectangle{
         width: 20
         height: 20
         radius: 10
-        colorCenter: "lightgreen"
+        colorCenter: "red"
     }
 
     GradientText{

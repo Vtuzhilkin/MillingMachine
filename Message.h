@@ -11,6 +11,8 @@ public:
 
     Message(unsigned char opCode, unsigned char length, const QVector<unsigned char>& inputData);
 
+    Message(const QByteArray &byteArray);
+
     QByteArray toQByteArray() const;
 
 private:
@@ -20,9 +22,11 @@ private:
     unsigned char crc1;
     unsigned char crc2;
 
-    void calculateCRC();
+    uint16_t calculateCRC() const;
 
-    uint16_t updateCRC(uint16_t crc, unsigned char byte);
+    uint16_t updateCRC(uint16_t crc, unsigned char byte) const;
+
+    bool checkCRC() const;
 };
 
 const int tableCRC16[] = {

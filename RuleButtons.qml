@@ -1,3 +1,5 @@
+import MillingMachine
+
 GradientRectangle{
     width: 300
     height: 130
@@ -11,6 +13,9 @@ GradientRectangle{
         height: 50
         colorButton: "#539ef3"
         radius: 10
+        onClicked:{
+            MillingMachine.startMilling(listCommands.text.split('\n'));
+        }
     }
     GradientButton{
         id: stopButton

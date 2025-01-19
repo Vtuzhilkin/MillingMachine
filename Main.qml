@@ -119,7 +119,7 @@ Window {
         width: rectScroll.width
         height: rectScroll.height-3*rectScroll.radius
         TextArea{
-            id: list_coordinates
+            id: listCommands
             font.pixelSize: 22
             background: null
             font.family: montserratFont.name

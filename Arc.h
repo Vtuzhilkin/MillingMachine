@@ -11,12 +11,13 @@ struct Point {
 class Arc
 {
 public:
-    Arc(const Point& start, const Point& end, const Point& center, float maxDist = 0.25);
+    Arc(const Point& start, const Point& end, const Point& center, float maxDist = 0.25, bool clockwise = true);
 
     QVector<Point> getArcPoints() const;
 
 private:
     Point start, end, center;
+    bool clockwise;
     double maxDist;
     QVector<Point> arcPoints;
 

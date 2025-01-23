@@ -80,39 +80,57 @@ bool MillingMachine::getStatusCOM()
 void MillingMachine::startMilling(const QStringList& listCommands)
 {
     GCode previousGCode;
-    for(QString qline: listCommands){
-        std::string line = qline.toStdString();
-        GCode gcode;
-        std::regex regex(R"(N(\d+)\s+G(\d+)\s+X([-\d.]+)\s+Y([-\d.]+)\s?+Z?([-\d.]*)\s?+(I([-\d.]+))?\s?+(J([-\d.]+))?\s?+(K([-\d.]+))?)");
-        std::smatch match;
+    if(!listCommands.empty()){
+        for(QString qline: listCommands){
+            std::string line = qline.toStdString();
+            GCode gcode;
+            std::regex regex(R"(N(\d+)\s*G?(\d+)?\s*(X?([-\d.]*)\s*)?\s*(Y?([-\d.]*)\s*)?\s*(Z?([-\d.]*)\s*)?(I([-\d.]+))?\s*(J([-\d.]+))?\s*(K([-\d.]+))?)");
+            std::smatch match;
 
-        if (std::regex_search(line, match, regex)) {
-            // Получаем номер строки
-            gcode.lineNumber = std::stoi(match[1].str());
+            if (std::regex_search(line, match, regex)) {
+                // Получаем номер строки
+                gcode.lineNumber = std::stoi(match[1].str());
 
-            // Получаем код функции G01 или G02
-            gcode.function = std::stoi(match[2].str());
+                // Получаем код функции G01 или G02
+                if(!match[2].str().empty()){
+                    gcode.function = std::stoi(match[2].str());
+                }else{
+                    gcode.function = previousGCode.function;
+                }
 
-            // Получаем координаты X, Y
-            gcode.X = std::stof(match[3].str());
-            gcode.Y = std::stof(match[4].str());
+                // Получаем координаты X, Y
+                if (!match[3].str().empty()) {
+                    gcode.X = std::stof(match[4].str());
+                }else{
+                    gcode.X = previousGCode.X;
+                }
 
-            // Если есть координата Z, получаем её
-            if (!match[5].str().empty()) {
-                gcode.Z = std::stof(match[5].str());
+                if (!match[5].str().empty()) {
+                    gcode.Y = std::stof(match[6].str());
+                }else{
+                    gcode.Y = previousGCode.Y;
+                }
+
+                // Если есть координата Z, получаем её
+                if (!match[7].str().empty()) {
+                    gcode.Z = std::stof(match[8].str());
+                }else{
+                    gcode.Z = previousGCode.Z;
+                }
+                // Если это G02, то получаем I, J, K
+                if (gcode.function == 2) {
+                    if (!match[9].str().empty()) gcode.I = std::stof(match[10].str());
+                    if (!match[11].str().empty()) gcode.J = std::stof(match[12].str());
+                    if (!match[13].str().empty()) gcode.K = std::stof(match[14].str());
+                }
             }else{
-                gcode.Z = previousGCode.Z;
+                //qDebug() << gcode.lineNumber << " " << gcode.function << " " << gcode.X << " " <<gcode.Y << " " << gcode.Z << " " << gcode.I << " " <<gcode.J << " " << gcode.K;
+                qDebug() << qline;
             }
-            // Если это G02, то получаем I, J, K
-            if (gcode.function == 2) {
-                if (!match[6].str().empty()) gcode.I = std::stof(match[7].str());
-                if (!match[8].str().empty()) gcode.J = std::stof(match[9].str());
-                if (!match[10].str().empty()) gcode.K = std::stof(match[11].str());
-            }
+            addMessage(gcode, previousGCode);
+            previousGCode = gcode;
+
         }
-        addMessage(gcode, previousGCode);
-        previousGCode = gcode;
-        //qDebug() << gcode.lineNumber << " " << gcode.function << " " << gcode.X << " " <<gcode.Y << " " << gcode.Z << " " << gcode.I << " " <<gcode.J << " " << gcode.K;
     }
 }
 
@@ -123,18 +141,19 @@ void MillingMachine::addMessage(const GCode& gcode, const GCode& previousGCode){
         formatedNumber(gcode.X, result);
         formatedNumber(gcode.Y, result);
         formatedNumber(gcode.Z, result);
-        messages.push_back(Message{'N', result.size(), result});
-    }else if(gcode.function == 2){
+        messages.push_back(Message{'N', static_cast<unsigned char>(result.size()), result});
+        qDebug() << gcode.X << " " << gcode.Y << " " << gcode.Z;
+    }else if(gcode.function == 2 || gcode.function == 3){
         Arc arc(Point{previousGCode.X, previousGCode.Y, previousGCode.Z},
                 Point{gcode.X, gcode.Y, gcode.Z},
-                Point{gcode.X - gcode.I, gcode.Y - gcode.J, gcode.Z - gcode.K});
+                Point{gcode.X + gcode.I, gcode.Y + gcode.J, gcode.Z + gcode.K}, gcode.function == 2);
         for(const Point& point: arc.getArcPoints()){
             QVector<unsigned char> result;
             formatedNumber(point.x, result);
             formatedNumber(point.y, result);
             formatedNumber(point.z, result);
             qDebug() << point.x << " " << point.y << " " << point.z;
-            messages.push_back(Message{'N', result.size(), result});
+            messages.push_back(Message{'N', static_cast<unsigned char>(result.size()), result});
         }
     }
 }

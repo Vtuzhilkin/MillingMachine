@@ -1,7 +1,7 @@
 #include "Arc.h"
 
-Arc::Arc(const Point &start, const Point &end, const Point &center, float maxDist)
-    : start(start), end(end), center(center), maxDist(maxDist) {
+Arc::Arc(const Point &start, const Point &end, const Point &center, float maxDist, bool clockwise)
+    : start(start), end(end), center(center), maxDist(maxDist), clockwise(clockwise) {
     calculateArcPoints();
 }
 
@@ -17,9 +17,14 @@ void Arc::calculateArcPoints() {
     // Длина вектора CA (радиус дуги)
     float radius = vectorLength(CA);
 
+    Point perpendicular = crossProduct(CA, CB);
+
     // Угол дуги между CA и CB
     float cosTheta = dotProduct(CA, CB) / (vectorLength(CA) * vectorLength(CB));
     float theta = std::acos(cosTheta);
+    if((perpendicular.z > 0 && clockwise) || (perpendicular.z < 0 && !clockwise)){
+        theta = 2*std::acos(-1) - theta;
+    }
 
     // Количество точек, которое нужно для того, чтобы расстояние между точками было <= maxDist
     int N = std::ceil((theta * radius) / maxDist);
@@ -27,6 +32,9 @@ void Arc::calculateArcPoints() {
     // Ортогональные единичные векторы в плоскости дуги
     Point u = normalize(CA);
     Point v = normalize(crossProduct(crossProduct(CA, CB), CA));
+    if((perpendicular.z > 0 && clockwise) || (perpendicular.z < 0 && !clockwise)){
+        v = {-v.x, -v.y, -v.z};
+    }
 
     // Угол между точками на дуге
     float deltaTheta = theta / N;

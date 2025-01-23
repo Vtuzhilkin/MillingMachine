@@ -3,13 +3,14 @@ import QtQuick.Effects
 import QtQuick.Controls
 
 Window {
+    id: mainWindow
     visible: true
     visibility: Window.Maximized
     flags: Qt.FramelessWindowHint | Qt.Window
 
     onVisibilityChanged: {
-        if (visibility === Window.Windowed) {
-            visibility = Window.Maximized;
+        if (mainWindow.visibility === Window.Windowed) {
+            mainWindow.visibility = Window.Maximized;
         }
     }
 

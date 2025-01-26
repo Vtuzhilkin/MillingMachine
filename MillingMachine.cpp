@@ -43,16 +43,19 @@ MillingMachine::~MillingMachine()
 void MillingMachine::run()
 {
     while(mThread){
-        if(openedPort){
+        if(openedPort && operating){
             sendMessage();
         }
-        msleep(100);
+        if(!listCommands.empty()){
+            operatingCommands();
+        }
+        msleep(10);
     }
 }
 
 void MillingMachine::sendMessage()
 {
-    if(!messages.empty()){
+    if(!messages.empty() && (messages.front().getCode() == 'C' || (statusMachine.calibrated && !statusMachine.moving))){
         serialPort->write(messages.front().toQByteArray());
     }else{
         serialPort->write(Message{'C'}.toQByteArray());
@@ -77,61 +80,85 @@ bool MillingMachine::getStatusCOM()
     return openedPort;
 }
 
-void MillingMachine::startMilling(const QStringList& listCommands)
+void MillingMachine::startMilling(const QStringList& lCommands)
 {
-    GCode previousGCode;
-    if(!listCommands.empty()){
-        for(QString qline: listCommands){
-            std::string line = qline.toStdString();
-            GCode gcode;
-            std::regex regex(R"(N(\d+)\s*G?(\d+)?\s*(X?([-\d.]*)\s*)?\s*(Y?([-\d.]*)\s*)?\s*(Z?([-\d.]*)\s*)?(I([-\d.]+))?\s*(J([-\d.]+))?\s*(K([-\d.]+))?)");
-            std::smatch match;
+    QMutexLocker locker(&m_Operating);
+    if(listCommands.empty()){
+        listCommands = lCommands;
+        operating = true;
+    }
+}
 
-            if (std::regex_search(line, match, regex)) {
-                // Получаем номер строки
-                gcode.lineNumber = std::stoi(match[1].str());
+void MillingMachine::stopMilling()
+{
+    QMutexLocker locker(&m_Operating);
+    listCommands.clear();
+    messages.clear();
+    messages.push_front(Message{'S'});
+}
 
-                // Получаем код функции G01 или G02
-                if(!match[2].str().empty()){
-                    gcode.function = std::stoi(match[2].str());
-                }else{
-                    gcode.function = previousGCode.function;
-                }
+void MillingMachine::continueMilling()
+{
+    operating = true;
+}
 
-                // Получаем координаты X, Y
-                if (!match[3].str().empty()) {
-                    gcode.X = std::stof(match[4].str());
-                }else{
-                    gcode.X = previousGCode.X;
-                }
+void MillingMachine::pauseMilling()
+{
+    QMutexLocker locker(&m_Operating);
+    messages.push_front('S');
+}
 
-                if (!match[5].str().empty()) {
-                    gcode.Y = std::stof(match[6].str());
-                }else{
-                    gcode.Y = previousGCode.Y;
-                }
+void MillingMachine::operatingCommands()
+{
+    std::string line;
+    {
+        QMutexLocker locker(&m_Operating);
+        line = listCommands.front().toStdString();
+        listCommands.pop_front();
+    }
+    GCode gcode;
+    std::regex regex(R"(N(\d+)\s*G?(\d+)?\s*(X?([-\d.]*)\s*)?\s*(Y?([-\d.]*)\s*)?\s*(Z?([-\d.]*)\s*)?(I([-\d.]+))?\s*(J([-\d.]+))?\s*(K([-\d.]+))?)");
+    std::smatch match;
 
-                // Если есть координата Z, получаем её
-                if (!match[7].str().empty()) {
-                    gcode.Z = std::stof(match[8].str());
-                }else{
-                    gcode.Z = previousGCode.Z;
-                }
-                // Если это G02, то получаем I, J, K
-                if (gcode.function == 2) {
-                    if (!match[9].str().empty()) gcode.I = std::stof(match[10].str());
-                    if (!match[11].str().empty()) gcode.J = std::stof(match[12].str());
-                    if (!match[13].str().empty()) gcode.K = std::stof(match[14].str());
-                }
-            }else{
-                //qDebug() << gcode.lineNumber << " " << gcode.function << " " << gcode.X << " " <<gcode.Y << " " << gcode.Z << " " << gcode.I << " " <<gcode.J << " " << gcode.K;
-                qDebug() << qline;
-            }
-            addMessage(gcode, previousGCode);
-            previousGCode = gcode;
+    if (std::regex_search(line, match, regex)) {
+        // Получаем номер строки
+        gcode.lineNumber = std::stoi(match[1].str());
 
+        // Получаем код функции G01 или G02
+        if(!match[2].str().empty()){
+            gcode.function = std::stoi(match[2].str());
+        }else{
+            gcode.function = previousGCode.function;
+        }
+
+        // Получаем координаты X, Y
+        if (!match[3].str().empty()) {
+            gcode.X = std::stof(match[4].str());
+        }else{
+            gcode.X = previousGCode.X;
+        }
+
+        if (!match[5].str().empty()) {
+            gcode.Y = std::stof(match[6].str());
+        }else{
+            gcode.Y = previousGCode.Y;
+        }
+
+        // Если есть координата Z, получаем её
+        if (!match[7].str().empty()) {
+            gcode.Z = std::stof(match[8].str());
+        }else{
+            gcode.Z = previousGCode.Z;
+        }
+        // Если это G02, то получаем I, J, K
+        if (gcode.function == 2) {
+            if (!match[9].str().empty()) gcode.I = std::stof(match[10].str());
+            if (!match[11].str().empty()) gcode.J = std::stof(match[12].str());
+            if (!match[13].str().empty()) gcode.K = std::stof(match[14].str());
         }
     }
+    addMessage(gcode, previousGCode);
+    previousGCode = gcode;
 }
 
 
@@ -152,8 +179,10 @@ void MillingMachine::addMessage(const GCode& gcode, const GCode& previousGCode){
             formatedNumber(point.x, result);
             formatedNumber(point.y, result);
             formatedNumber(point.z, result);
-            qDebug() << point.x << " " << point.y << " " << point.z;
-            messages.push_back(Message{'N', static_cast<unsigned char>(result.size()), result});
+            {
+                QMutexLocker locker(&m_Operating);
+                messages.push_back(Message{'N', static_cast<unsigned char>(result.size()), result});
+            }
         }
     }
 }

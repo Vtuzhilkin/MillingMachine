@@ -14,7 +14,9 @@ GradientRectangle{
         colorButton: "#539ef3"
         radius: 10
         onClicked:{
-            MillingMachine.startMilling(listCommands.text.split('\n'));
+            if(listCommands.text !== ""){
+                MillingMachine.startMilling(listCommands.text.split('\n'));
+            }
         }
     }
     GradientButton{
@@ -26,6 +28,9 @@ GradientRectangle{
         height: 50
         colorButton: "#539ef3"
         radius: 10
+        onClicked: {
+            MillingMachine.stopMilling();
+        }
     }
     GradientButton{
         id: startPause
@@ -36,6 +41,9 @@ GradientRectangle{
         height: 50
         colorButton: "#539ef3"
         radius: 10
+        onClicked: {
+            MillingMachine.pauseMilling();
+        }
     }
     GradientButton{
         id: startContinue
@@ -46,5 +54,8 @@ GradientRectangle{
         height: 50
         colorButton: "#539ef3"
         radius: 10
+        onClicked: {
+            MillingMachine.continueMilling();
+        }
     }
 }

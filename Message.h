@@ -15,6 +15,8 @@ public:
 
     QByteArray toQByteArray() const;
 
+    unsigned char getCode() const;
+
 private:
     unsigned char operationCode;
     unsigned char dataLength;

@@ -1,4 +1,5 @@
 import QtQuick
+import MillingMachine
 
 GradientRectangle{
     width: 300
@@ -180,7 +181,7 @@ GradientRectangle{
         y: 220
         width: 140
         height: 50
-        text: "X00Y00Z00"
+        text: "X000Y000Z000"
         fontName: montserratFont.name
     }
 
@@ -194,6 +195,10 @@ GradientRectangle{
         text: "Move"
         radius: 10
         fontName: montserratFont.name
+        onClicked:{
+            MillingMachine.startMilling(("N01 G01" + textMove.text).split("\n"))
+            console.log(textMove.text)
+        }
     }
 
     GradientTextEdit{

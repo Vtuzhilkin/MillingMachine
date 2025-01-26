@@ -49,6 +49,11 @@ QByteArray Message::toQByteArray() const {
     return result;
 }
 
+unsigned char Message::getCode() const
+{
+    return operationCode;
+}
+
 uint16_t Message::calculateCRC() const {
     uint16_t crc = 0xFFFF;
 

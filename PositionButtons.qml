@@ -63,12 +63,14 @@ GradientRectangle{
         x: 20
         y: 20
         anchors.horizontalCenter: rectPosition.horizontalCenter
-        text: "Position: X00Y00Z00"
+        text: "Position: X" + Number(MillingMachine.xCoordinate).toString() +
+                        "Y" + Number(MillingMachine.yCoordinate).toString() +
+                        "Z" + Number(MillingMachine.zCoordinate).toString()
         fontName: montserratFont.name
     }
 
     GradientText{
-        id: textplusX
+        id: textX
         x: 20
         y: 40
         width: 140
@@ -88,6 +90,11 @@ GradientRectangle{
         radius: 10
         fontText: 25
         fontName: montserratFont.name
+        onClicked:{
+            MillingMachine.startMilling(("N01 G01 X" + Number(MillingMachine.xCoordinate + 1).toString() +
+                                         "Y" + Number(MillingMachine.yCoordinate).toString() +
+                                         "Z" + Number(MillingMachine.zCoordinate).toString()).split("\n"))
+        }
     }
 
     GradientButton{
@@ -101,10 +108,15 @@ GradientRectangle{
         radius: 10
         fontText: 25
         fontName: montserratFont.name
+        onClicked:{
+            MillingMachine.startMilling(("N01 G01 X" + Number(MillingMachine.xCoordinate - 1).toString() +
+                                         "Y" + Number(MillingMachine.yCoordinate).toString() +
+                                         "Z" + Number(MillingMachine.zCoordinate).toString()).split("\n"))
+        }
     }
 
     GradientText{
-        id: textplusY
+        id: textY
         x: 20
         y: 100
         width: 140
@@ -124,6 +136,11 @@ GradientRectangle{
         radius: 10
         fontText: 25
         fontName: montserratFont.name
+        onClicked:{
+            MillingMachine.startMilling(("N01 G01 X" + Number(MillingMachine.xCoordinate).toString() +
+                                         "Y" + Number(MillingMachine.yCoordinate + 1).toString() +
+                                         "Z" + Number(MillingMachine.zCoordinate).toString()).split("\n"))
+        }
     }
 
     GradientButton{
@@ -137,10 +154,15 @@ GradientRectangle{
         radius: 10
         fontText: 25
         fontName: montserratFont.name
+        onClicked:{
+            MillingMachine.startMilling(("N01 G01 X" + Number(MillingMachine.xCoordinate).toString() +
+                                         "Y" + Number(MillingMachine.yCoordinate - 1).toString() +
+                                         "Z" + Number(MillingMachine.zCoordinate).toString()).split("\n"))
+        }
     }
 
     GradientText{
-        id: textplusZ
+        id: textZ
         x: 20
         y: 160
         width: 140
@@ -160,6 +182,11 @@ GradientRectangle{
         radius: 10
         fontText: 25
         fontName: montserratFont.name
+        onClicked:{
+            MillingMachine.startMilling(("N01 G01 X" + Number(MillingMachine.xCoordinate).toString() +
+                                         "Y" + Number(MillingMachine.yCoordinate).toString() +
+                                         "Z" + Number(MillingMachine.zCoordinate + 1).toString()).split("\n"))
+        }
     }
 
     GradientButton{
@@ -173,6 +200,11 @@ GradientRectangle{
         radius: 10
         fontText: 25
         fontName: montserratFont.name
+        onClicked:{
+            MillingMachine.startMilling(("N01 G01 X" + Number(MillingMachine.xCoordinate).toString() +
+                                         "Y" + Number(MillingMachine.yCoordinate).toString() +
+                                         "Z" + Number(MillingMachine.zCoordinate - 1).toString()).split("\n"))
+        }
     }
 
     GradientTextEdit{
@@ -181,7 +213,7 @@ GradientRectangle{
         y: 220
         width: 140
         height: 50
-        text: "X000Y000Z000"
+        text: "X00Y00Z00"
         fontName: montserratFont.name
     }
 
@@ -221,5 +253,8 @@ GradientRectangle{
         text: "Velocity"
         radius: 10
         fontName: montserratFont.name
+        onClicked:{
+            MillingMachine.changeVelocity(parseFloat(textSpeed.text.substring(1)));
+        }
     }
 }

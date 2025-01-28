@@ -23,12 +23,13 @@ GradientRectangle{
     }
 
     GradientRectangle{
+        id: ledProcessing
         x: 140
         y: 20
         width: 20
         height: 20
         radius: 10
-        colorCenter: "red"
+        colorCenter: MillingMachine.processing ? "lightgreen" : "red"
     }
 
     GradientText{
@@ -45,10 +46,11 @@ GradientRectangle{
         width: 20
         height: 20
         radius: 10
-        colorCenter: "red"
+        colorCenter: MillingMachine.calibrated ? "lightgreen" : "red"
     }
 
     GradientText{
+        id: ledPartZero
         x: 40
         y: 60
         width: 90

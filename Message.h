@@ -17,6 +17,10 @@ public:
 
     unsigned char getCode() const;
 
+    QVector<unsigned char> getData() const;
+
+    bool checkCRC() const;
+
 private:
     unsigned char operationCode;
     unsigned char dataLength;
@@ -28,7 +32,6 @@ private:
 
     uint16_t updateCRC(uint16_t crc, unsigned char byte) const;
 
-    bool checkCRC() const;
 };
 
 const int tableCRC16[] = {

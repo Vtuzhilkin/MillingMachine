@@ -28,6 +28,7 @@ struct Status{
     bool calibrated;
     bool moving;
     float xCoordinate, yCoordinate, zCoordinate;
+    float velocity;
 };
 
 class MillingMachine : public QThread
@@ -37,24 +38,38 @@ class MillingMachine : public QThread
     QML_ELEMENT
     QML_NAMED_ELEMENT(MillingMachine)
     Q_PROPERTY(bool openedPort READ getStatusCOM NOTIFY updateLeds)
+    Q_PROPERTY(bool calibrated READ getCalibrated NOTIFY updateLeds)
+    Q_PROPERTY(bool processing READ getProcessing NOTIFY updateLeds)
+    Q_PROPERTY(float xCoordinate READ getXCoordiate NOTIFY updateCoordiantes)
+    Q_PROPERTY(float yCoordinate READ getYCoordiate NOTIFY updateCoordiantes)
+    Q_PROPERTY(float zCoordinate READ getZCoordiate NOTIFY updateCoordiantes)
+
     public:
         static MillingMachine* create(QQmlEngine *, QJSEngine *);
         static MillingMachine* instance();
         ~MillingMachine();
         Q_INVOKABLE void openCOM(int numberPort);
         Q_INVOKABLE void closeCOM();
-        Q_INVOKABLE bool getStatusCOM();
         Q_INVOKABLE void startMilling(const QStringList& listCommands);
         Q_INVOKABLE void stopMilling();
         Q_INVOKABLE void continueMilling();
         Q_INVOKABLE void pauseMilling();
-        void operatingCommands();
+        Q_INVOKABLE void changeVelocity(float velocity);
+
+        bool getStatusCOM();
+        bool getCalibrated();
+        bool getProcessing();
+        float getXCoordiate();
+        float getYCoordiate();
+        float getZCoordiate();
+        void operatingMessage(const Message& message);
     private:
         explicit MillingMachine(QObject *parent = nullptr);
         void run() override;
         void sendMessage();
         void addMessage(const GCode& gcode, const GCode& previousGCode);
         void formatedNumber(float number, QVector<unsigned char>&);
+        void operatingCommands();
         static MillingMachine* millingMachine;
         QSerialPort* serialPort;
         bool openedPort = false;
@@ -68,6 +83,7 @@ class MillingMachine : public QThread
         Status statusMachine;
     signals:
         void updateLeds();
+        void updateCoordiantes();
 };
 
 

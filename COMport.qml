@@ -8,8 +8,18 @@ GradientRectangle{
     GradientText{
         id: textCOMPort
         anchors.horizontalCenter: parent.horizontalCenter
+        width: 125
         y: 25
-        text: "COM-port"
+        text: "COM-port №"
+        fontName: montserratFont.name
+    }
+
+    GradientTextEdit{
+        id: numberCOMPort
+        anchors.left: textCOMPort.right
+        anchors.leftMargin: 20
+        y: 25
+        text: "1"
         fontName: montserratFont.name
     }
 
@@ -24,7 +34,7 @@ GradientRectangle{
         radius: 10
         fontName: montserratFont.name
         onClicked:{
-            MillingMachine.openCOM(3)
+            MillingMachine.openCOM(Number(numberCOMPort.text))
         }
     }
 

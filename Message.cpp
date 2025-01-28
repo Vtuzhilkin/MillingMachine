@@ -54,6 +54,11 @@ unsigned char Message::getCode() const
     return operationCode;
 }
 
+QVector<unsigned char> Message::getData() const
+{
+    return data;
+}
+
 uint16_t Message::calculateCRC() const {
     uint16_t crc = 0xFFFF;
 

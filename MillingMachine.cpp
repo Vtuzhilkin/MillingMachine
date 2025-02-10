@@ -57,6 +57,7 @@ void MillingMachine::sendMessage()
 {
     bool sendMessage = false;
     // Если список не пустой то (мы можем отправить команду стоп) или (новые координаты если он откалиброван и стоит на месте)
+    serialPort->flush();
     if(!messages.empty() && (messages.front().getCode() == 'S' || (statusMachine.calibrated && !statusMachine.moving))){
         sendMessage = (serialPort->write(messages.front().toQByteArray()) != -1);
     }else if(statusMachine.calibrated){
@@ -66,7 +67,7 @@ void MillingMachine::sendMessage()
     bool reciveMessage = false;
     Message response('0');
     if(sendMessage){
-        if(serialPort->waitForBytesWritten(1000) && serialPort->waitForReadyRead(3000)){
+        if(serialPort->waitForBytesWritten(100) && serialPort->waitForReadyRead(100)){
             response = Message(serialPort->readAll());
             if(response.checkCRC()){
                 messages.pop_front();
@@ -81,15 +82,12 @@ void MillingMachine::sendMessage()
         QVector<unsigned char> data = response.getData();
         switch (response.getCode()) {
         case 'P':
-            statusMachine.xCoordinate = (data[0] == '+' ? 1 : -1) * (float(data[1] - '0')*100 + float(data[2] - '0')*10 +
-                                        float(data[3] - '0') + float(data[4] - '0')/10 + float(data[5] - '0')/100);
-            statusMachine.yCoordinate = (data[6] == '+' ? 1 : -1) * (float(data[7] - '0')*100 + float(data[8] - '0')*10 +
-                                        float(data[9] - '0') + float(data[10] - '0')/10 + float(data[11] - '0')/100);
-            statusMachine.zCoordinate = (data[12] == '+' ? 1 : -1) * (float(data[13] - '0')*100 + float(data[14] - '0')*10 +
-                                        float(data[15] - '0') + float(data[16] - '0')/10 + float(data[17] - '0')/100);
-            statusMachine.velocity = float(data[18] - '0') + float(data[19] - '0')/10 + float(data[20] - '0')/100;
-            statusMachine.calibrated = (data[21] == '1');
-            statusMachine.moving = (data[22] == '1');
+            statusMachine.xCoordinate = (float)((data[0] << 8) | data[1]) / 100.0f;
+            statusMachine.yCoordinate = (float)((data[2] << 8) | data[3]) / 100.0f;
+            statusMachine.zCoordinate = (float)((data[4] << 8) | data[5]) / 100.0f;
+            statusMachine.velocity = (float)((data[6] << 8) | data[7]) / 100.0f;
+            statusMachine.calibrated = bool(data[9]);
+            statusMachine.moving = bool(data[10]);
             break;
         case 'C':
             openedPort = false;
@@ -269,20 +267,9 @@ void MillingMachine::addMessage(const GCode& gcode, const GCode& previousGCode){
 
 void MillingMachine::formatedNumber(float num, QVector<unsigned char>& data)
 {
-    data.push_back((num < 0) ? '-' : '+');
-    num = std::abs(num);
-
-    int intPart = static_cast<int>(num);
-    int fracPart = static_cast<int>((num - intPart) * 100);
-
-    QString formattedIntPart = QString::number(intPart).rightJustified(3, '0');
-    for (int i = 0; i < 3; ++i) {
-        data.push_back(formattedIntPart[i].toLatin1());
-    }
-    QString formattedFracPart = QString::number(fracPart).rightJustified(2, '0');
-    for (int i = 0; i < 2; ++i) {
-        data.push_back(formattedFracPart[i].toLatin1());
-    }
+    int16_t num_int = num*100;
+    data.push_back((uint8_t)(num_int & 0xFF));
+    data.push_back((uint8_t)((num_int >> 8) & 0xFF));
 }
 
 

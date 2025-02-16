@@ -18,15 +18,9 @@ MillingMachine *MillingMachine::instance()
 MillingMachine::MillingMachine(QObject *parent)
     : QThread{parent}
 {
-    serialPort = new QSerialPort(this);
-    serialPort->setBaudRate(QSerialPort::Baud9600);
-    serialPort->setDataBits(QSerialPort::Data8);
-    serialPort->setParity(QSerialPort::NoParity);
-    serialPort->setStopBits(QSerialPort::OneStop);
-    serialPort->setFlowControl(QSerialPort::NoFlowControl);
-
     connect(&timerUpdate, &QTimer::timeout, this, &MillingMachine::updateLeds);
-    timerUpdate.setInterval(100);
+    connect(&timerUpdate, &QTimer::timeout, this, &MillingMachine::updateCoordiantes);
+    timerUpdate.setInterval(10);
     timerUpdate.start();
 
     mThread = true;
@@ -35,45 +29,68 @@ MillingMachine::MillingMachine(QObject *parent)
 
 MillingMachine::~MillingMachine()
 {
-    serialPort->close();
     mThread = false;
     msleep(1000);
 }
 
 void MillingMachine::run()
 {
+    QSerialPort* serialPort = new QSerialPort(this);
+    serialPort->setBaudRate(QSerialPort::Baud38400);
+    serialPort->setDataBits(QSerialPort::Data8);
+    serialPort->setParity(QSerialPort::NoParity);
+    serialPort->setStopBits(QSerialPort::OneStop);
+    serialPort->setFlowControl(QSerialPort::NoFlowControl);
+
     while(mThread){
-        if(openedPort && operating){
-            sendMessage();
+        if(connectDivece){
+            if(openedPort){
+                sendMessage(serialPort);
+            }else{
+                connectDevice(serialPort);
+            }
+            if(!listCommands.empty()){
+                operatingCommands();
+            }
         }
-        if(!listCommands.empty()){
-            operatingCommands();
-        }
-        msleep(100);
+        msleep(10);
     }
+
+    serialPort->close();
 }
 
-void MillingMachine::sendMessage()
+void MillingMachine::sendMessage(QSerialPort* serialPort)
 {
     bool sendMessage = false;
+    int nTry = 3;
     // Если список не пустой то (мы можем отправить команду стоп) или (новые координаты если он откалиброван и стоит на месте)
     serialPort->flush();
-    if(!messages.empty() && (messages.front().getCode() == 'S' || (statusMachine.calibrated && !statusMachine.moving))){
-        sendMessage = (serialPort->write(messages.front().toQByteArray()) != -1);
-    }else if(statusMachine.calibrated){
-        sendMessage = (serialPort->write(Message{'P'}.toQByteArray()) != -1);
+    bool shouldSend = !messages.empty() && (messages.front().getCode() == 'S' ||
+                                            messages.front().getCode() == 'C' ||
+                                            (/*statusMachine.calibrated &&*/ !statusMachine.moving));
+    if (!shouldSend) {
+        messages.push_back(Message{'P'});
+    }else{
+        int a = 0;
+    }
+
+    while (!sendMessage && nTry) {
+        sendMessage = (serialPort->write(messages.front().toQByteArray().data(), 20) != -1);
+        serialPort->waitForBytesWritten(1000);
+        nTry--;
     }
 
     bool reciveMessage = false;
     Message response('0');
     if(sendMessage){
-        if(serialPort->waitForBytesWritten(100) && serialPort->waitForReadyRead(100)){
+        if(serialPort->waitForReadyRead(1000)){
             response = Message(serialPort->readAll());
             if(response.checkCRC()){
                 messages.pop_front();
                 reciveMessage = true;
             }
         }else{
+            serialPort->close();
             openedPort = false;
         }
     }
@@ -82,31 +99,46 @@ void MillingMachine::sendMessage()
         QVector<unsigned char> data = response.getData();
         switch (response.getCode()) {
         case 'P':
-            statusMachine.xCoordinate = (float)((data[0] << 8) | data[1]) / 100.0f;
-            statusMachine.yCoordinate = (float)((data[2] << 8) | data[3]) / 100.0f;
-            statusMachine.zCoordinate = (float)((data[4] << 8) | data[5]) / 100.0f;
-            statusMachine.velocity = (float)((data[6] << 8) | data[7]) / 100.0f;
-            statusMachine.calibrated = bool(data[9]);
-            statusMachine.moving = bool(data[10]);
+            statusMachine.xCoordinate = (float)((data[1] << 8) | data[0])/ 100.0f;
+            statusMachine.yCoordinate = (float)((data[3] << 8) | data[2]) / 100.0f;
+            statusMachine.zCoordinate = (float)((data[5] << 8) | data[4]) / 100.0f;
+            statusMachine.velocity = (float)((data[7] << 8) | data[6]) / 100.0f;
+            statusMachine.calibrated = bool(data[8]);
+            statusMachine.moving = bool(data[9]);
             break;
         case 'C':
+            serialPort->close();
             openedPort = false;
+            connectDivece = false;
+            break;
         default:
             break;
         }
     }
 }
 
-void MillingMachine::operatingMessage(const Message& message){
-
-}
-
-void MillingMachine::openCOM(int numberPort)
+void MillingMachine::connectDevice(QSerialPort* serialPort)
 {
     serialPort->setPortName("COM" + QString::number(numberPort));
-    openedPort = serialPort->open(QIODevice::ReadWrite);
-    if(openedPort){
-        messages.push_front(Message{'O'});
+    serialPort->close();
+    if(serialPort->open(QIODevice::ReadWrite)){
+        serialPort->flush();
+        serialPort->write(Message{'O'}.toQByteArray().data(), 20);
+        serialPort->waitForBytesWritten(1000);
+        if(serialPort->waitForReadyRead(1000)){
+            Message response = Message(serialPort->readAll());
+            if(response.checkCRC() && response.getCode() == 'O'){
+                openedPort = true;
+            }
+        }
+    }
+}
+
+void MillingMachine::openCOM(int numPort)
+{
+    if(!connectDivece){
+        connectDivece = true;
+        numberPort = numPort;
     }
 }
 
@@ -115,8 +147,8 @@ void MillingMachine::closeCOM()
     QMutexLocker locker(&m_Operating);
     listCommands.clear();
     messages.clear();
-    messages.push_back(Message{'S'});
-    messages.push_back(Message{'C'});
+    messages.push_front(Message{'C'});
+    messages.push_front(Message{'S'});
 }
 
 bool MillingMachine::getStatusCOM()
@@ -137,7 +169,7 @@ bool MillingMachine::getProcessing()
 void MillingMachine::startMilling(const QStringList& lCommands)
 {
     QMutexLocker locker(&m_Operating);
-    if(listCommands.empty() && statusMachine.calibrated && !statusMachine.moving){
+    if(listCommands.empty() && !statusMachine.moving){
         listCommands = lCommands;
         operating = true;
     }
@@ -247,7 +279,7 @@ void MillingMachine::addMessage(const GCode& gcode, const GCode& previousGCode){
         formatedNumber(gcode.Y, result);
         formatedNumber(gcode.Z, result);
         messages.push_back(Message{'N', static_cast<unsigned char>(result.size()), result});
-        qDebug() << gcode.X << " " << gcode.Y << " " << gcode.Z;
+        //qDebug() << gcode.X << " " << gcode.Y << " " << gcode.Z;
     }else if(gcode.function == 2 || gcode.function == 3){
         Arc arc(Point{previousGCode.X, previousGCode.Y, previousGCode.Z},
                 Point{gcode.X, gcode.Y, gcode.Z},

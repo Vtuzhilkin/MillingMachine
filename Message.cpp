@@ -60,7 +60,7 @@ QVector<unsigned char> Message::getData() const
 }
 
 uint16_t Message::calculateCRC() const {
-    uint16_t crc = 0xFFFF;
+    uint16_t crc = 0;
 
     crc = updateCRC(crc, operationCode);
     crc = updateCRC(crc, dataLength);
@@ -71,9 +71,9 @@ uint16_t Message::calculateCRC() const {
     return crc;
 }
 
-uint16_t Message::updateCRC(uint16_t crc, unsigned char byte) const{
-    uint16_t tmp = crc ^ byte;
-    crc = (crc >> 8) ^ tableCRC16[tmp & 0xFF];
+uint16_t Message::updateCRC(uint16_t crc, uint8_t byte) const{
+    crc ^= byte;
+    crc = tableCRC16[(crc & 0xFF) % 256] ^ (crc >> 0);
     return crc;
 }
 

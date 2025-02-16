@@ -48,7 +48,7 @@ class MillingMachine : public QThread
         static MillingMachine* create(QQmlEngine *, QJSEngine *);
         static MillingMachine* instance();
         ~MillingMachine();
-        Q_INVOKABLE void openCOM(int numberPort);
+        Q_INVOKABLE void openCOM(int numPort);
         Q_INVOKABLE void closeCOM();
         Q_INVOKABLE void startMilling(const QStringList& listCommands);
         Q_INVOKABLE void stopMilling();
@@ -62,17 +62,18 @@ class MillingMachine : public QThread
         float getXCoordiate();
         float getYCoordiate();
         float getZCoordiate();
-        void operatingMessage(const Message& message);
     private:
         explicit MillingMachine(QObject *parent = nullptr);
         void run() override;
-        void sendMessage();
+        void sendMessage(QSerialPort* serialPort);
+        void connectDevice(QSerialPort* serialPort);
         void addMessage(const GCode& gcode, const GCode& previousGCode);
         void formatedNumber(float number, QVector<unsigned char>&);
         void operatingCommands();
         static MillingMachine* millingMachine;
-        QSerialPort* serialPort;
+        bool connectDivece = false;
         bool openedPort = false;
+        int numberPort = 0;
         bool mThread = false;
         bool operating = false;
         QQueue<Message> messages;

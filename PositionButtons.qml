@@ -63,9 +63,9 @@ GradientRectangle{
         x: 20
         y: 20
         anchors.horizontalCenter: rectPosition.horizontalCenter
-        text: "Position: X" + Number(MillingMachine.xCoordinate).toString() +
-                        "Y" + Number(MillingMachine.yCoordinate).toString() +
-                        "Z" + Number(MillingMachine.zCoordinate).toString()
+        text: "Position: X" + Number(MillingMachine.xCoordinate).toFixed(2).toString() +
+                        "Y" + Number(MillingMachine.yCoordinate).toFixed(2).toString() +
+                        "Z" + Number(MillingMachine.zCoordinate).toFixed(2).toString()
         fontName: montserratFont.name
     }
 
@@ -229,7 +229,7 @@ GradientRectangle{
         fontName: montserratFont.name
         onClicked:{
             MillingMachine.startMilling(("N01 G01" + textMove.text).split("\n"))
-            console.log(textMove.text)
+            //console.log(textMove.text)
         }
     }
 

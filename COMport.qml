@@ -19,18 +19,18 @@ GradientRectangle{
         anchors.left: textCOMPort.right
         anchors.leftMargin: 20
         y: 25
-        text: "1"
+        text: "4"
         fontName: montserratFont.name
     }
 
     GradientButton{
-        id: openCOM
+        id: connect
         x: 17
         y: 50
         width: 125
         height: 50
         colorButton: "#539ef3"
-        text: "Open"
+        text: "Connect"
         radius: 10
         fontName: montserratFont.name
         onClicked:{
@@ -39,13 +39,13 @@ GradientRectangle{
     }
 
     GradientButton{
-        id: closeCOM
+        id: disconnect
         x: 158
         y: 50
         width: 125
         height: 50
         colorButton: "#539ef3"
-        text: "Close"
+        text: "Disconnect"
         radius: 10
         fontName: montserratFont.name
         onClicked:{

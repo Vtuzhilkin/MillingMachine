@@ -39,6 +39,6 @@ const int tableCRC16[] = {
 };
 
 
-short int crc16(uint8_t* data, int size);
+uint16_t crc16(const uint8_t* data, int size);
 bool checkMessage(const uint8_t* data, int size);
 #endif // CRC16_H

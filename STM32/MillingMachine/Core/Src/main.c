@@ -63,9 +63,9 @@ static void MX_USART1_UART_Init(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-StepperMotor motorX(2, false, 2.0, 32);
-StepperMotor motorY(2, false, 2.0, 32);
-StepperMotor motorZ(1, false, 8.0, 32);
+StepperMotor motorX(2.0, false, 2.0, 32);
+StepperMotor motorY(2.0, false, 2.0, 32);
+StepperMotor motorZ(2.0, false, 8.0, 32);
 /* USER CODE END 0 */
 
 /**
@@ -102,8 +102,6 @@ int main(void)
   MX_TIM17_Init();
   MX_USART1_UART_Init();
   /* USER CODE BEGIN 2 */
-	HAL_GPIO_WritePin(M3_VCC_GPIO_Port, M3_VCC_Pin, GPIO_PIN_SET);
-	
 	motorX.SetPorts(M1_DIR_GPIO_Port, M1_DIR_Pin, M1_EN_GPIO_Port, M1_EN_Pin, M1_END_GPIO_Port, M1_END_Pin);
 	motorX.SetPWM(&htim17, TIM_CHANNEL_1);	
 	
@@ -114,7 +112,6 @@ int main(void)
 	motorZ.SetPWM(&htim2, TIM_CHANNEL_1);
 	
 	Machine machineMilling(&motorX, &motorY, &motorZ);
-	//machineMilling.Start();
 	
   /* USER CODE END 2 */
 
@@ -122,22 +119,19 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		
 		if(huart1.Instance->CR3 == 0){
-			HAL_UART_Receive_IT(&huart1, data, 2);
-			uint16_t size_data = data[1] + 2;
-			HAL_UART_Receive_IT(&huart1, data + 2, size_data);
-			size_data += 2;
-			
+			HAL_UART_Receive_IT(&huart1, data, 20);
+			uint16_t size_data = data[1] + 4;
+				
 			if(checkMessage(data, size_data - 2)){
 				if(data[0] == 'O'){
 					machineMilling.SetCOMPort(true);
-					HAL_UART_Transmit(&huart1, data, size_data, 100);
-				}else if(data[0] == 'C'){
+					HAL_UART_Transmit_IT(&huart1, data, size_data);
+				}else if(data[0] 	== 'C'){
 					machineMilling.SetCOMPort(false);
-					HAL_UART_Transmit(&huart1, data, size_data, 100);
+					HAL_UART_Transmit_IT(&huart1, data, size_data);
 				}else if(machineMilling.GetCOMPort()){
-						else if(data[0] == 'S'){
+						if(data[0] == 'S'){
 							machineMilling.Stop();
 						}else if(data[0] == 'N'){
 							machineMilling.ReadNextCoordinate(data + 2);
@@ -146,6 +140,10 @@ int main(void)
 							machineMilling.SetVelocity(data + 2);
 						}
 						machineMilling.GetStatus(data);
+						uint16_t crc = crc16(data, 12);
+						data[12] = (crc & 0xFF);
+						data[13] = ((crc >> 8) & 0xFF);
+						HAL_UART_Transmit_IT(&huart1, data, 14);
 				}
 			}
 		}

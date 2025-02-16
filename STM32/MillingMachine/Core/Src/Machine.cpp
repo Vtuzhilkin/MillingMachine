@@ -1,9 +1,9 @@
 #include "Machine.h"
 
 void Machine::ReadNextCoordinate(uint8_t* data){
-	float next_x = (float)((data[0] << 8) | data[1]) / 100.0f;
-	float next_y = (float)((data[2] << 8) | data[3]) / 100.0f;
-	float next_z = (float)((data[4] << 8) | data[5]) / 100.0f;
+	float next_x = (float)((data[1] << 8) | data[0]) / 100.0f;
+	float next_y = (float)((data[3] << 8) | data[2]) / 100.0f;
+	float next_z = (float)((data[5] << 8) | data[4]) / 100.0f;
 	
 	int32_t number_steps_x = next_x*MotorHorizontalX->GetStepsOneMM();
 	int32_t number_steps_y = next_y*MotorHorizontalY->GetStepsOneMM();
@@ -82,8 +82,8 @@ void Machine::GetStatus(uint8_t* data){
 	float z_coordinate = float(MotorVerticalZ->GetCurrentNumberSteps()) / MotorVerticalZ->GetStepsOneMM();
 	formatedNumber(data + 6, z_coordinate);
 	formatedNumber(data + 8, velocity);
-	data[9] = Calibrated();
-	data[10] = CheckStopMotors();
+	data[10] = Calibrated();
+	data[11] = !CheckStopMotors();
 }
 
 void Machine::formatedNumber(uint8_t* data, float number){

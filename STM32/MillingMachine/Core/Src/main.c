@@ -139,11 +139,14 @@ int main(void)
 						}else if(data[0] == 'V'){
 							machineMilling.SetVelocity(data + 2);
 						}
+						else if (data[0] == 'Z' && !machineMilling.Calibrated) {
+							machineMilling.Start();
+						}
 						machineMilling.GetStatus(data);
-						uint16_t crc = crc16(data, 12);
-						data[12] = (crc & 0xFF);
-						data[13] = ((crc >> 8) & 0xFF);
-						HAL_UART_Transmit_IT(&huart1, data, 14);
+						uint16_t crc = crc16(data, 15);
+						data[15] = (crc & 0xFF);
+						data[16] = ((crc >> 8) & 0xFF);
+						HAL_UART_Transmit_IT(&huart1, data, 17);
 				}
 			}
 		}

@@ -1,14 +1,14 @@
 #include "Message.h"
 #include <QDebug>
 
-Message::Message(unsigned char opCode)
+Message::Message(uint8_t opCode)
     : operationCode(opCode), dataLength(0) {
     uint16_t crc = calculateCRC();
     crc1 = crc & 0xFF;
     crc2 = (crc >> 8) & 0xFF;
 }
 
-Message::Message(unsigned char opCode, unsigned char length, const QVector<unsigned char> &inputData)
+Message::Message(uint8_t opCode, uint8_t length, const QVector<uint8_t> &inputData)
     : operationCode(opCode), dataLength(length), data(inputData) {
     uint16_t crc = calculateCRC();
     crc1 = crc & 0xFF;
@@ -41,7 +41,7 @@ QByteArray Message::toQByteArray() const {
     QByteArray result;
     result.append(operationCode);
     result.append(dataLength);
-    for (unsigned char byte : data) {
+    for (uint8_t byte : data) {
         result.append(byte);
     }
     result.append(crc1);
@@ -49,12 +49,12 @@ QByteArray Message::toQByteArray() const {
     return result;
 }
 
-unsigned char Message::getCode() const
+uint8_t Message::getCode() const
 {
     return operationCode;
 }
 
-QVector<unsigned char> Message::getData() const
+QVector<uint8_t> Message::getData() const
 {
     return data;
 }
@@ -65,7 +65,7 @@ uint16_t Message::calculateCRC() const {
     crc = updateCRC(crc, operationCode);
     crc = updateCRC(crc, dataLength);
 
-    for (unsigned char byte : data) {
+    for (uint8_t byte : data) {
         crc = updateCRC(crc, byte);
     }
     return crc;
@@ -85,8 +85,8 @@ bool Message::checkCRC() const
 
     uint16_t crc = calculateCRC();
 
-    unsigned char calculatedCRC1 = crc & 0xFF;
-    unsigned char calculatedCRC2 = (crc >> 8) & 0xFF;
+    uint8_t calculatedCRC1 = crc & 0xFF;
+    uint8_t calculatedCRC2 = (crc >> 8) & 0xFF;
 
     return calculatedCRC1 == crc1 && calculatedCRC2 == crc2;
 }

@@ -7,30 +7,30 @@
 
 class Message {
 public:
-    Message(unsigned char opCode);
+    Message(uint8_t opCode);
 
-    Message(unsigned char opCode, unsigned char length, const QVector<unsigned char>& inputData);
+    Message(uint8_t opCode, uint8_t length, const QVector<uint8_t>& inputData);
 
     Message(const QByteArray &byteArray);
 
     QByteArray toQByteArray() const;
 
-    unsigned char getCode() const;
+    uint8_t getCode() const;
 
-    QVector<unsigned char> getData() const;
+    QVector<uint8_t> getData() const;
 
     bool checkCRC() const;
 
 private:
-    unsigned char operationCode;
-    unsigned char dataLength;
-    QVector<unsigned char> data;
-    unsigned char crc1;
-    unsigned char crc2;
+    uint8_t operationCode;
+    uint8_t dataLength;
+    QVector<uint8_t> data;
+    uint8_t crc1;
+    uint8_t crc2;
 
     uint16_t calculateCRC() const;
 
-    uint16_t updateCRC(uint16_t crc, unsigned char byte) const;
+    uint16_t updateCRC(uint16_t crc, uint8_t byte) const;
 
 };
 

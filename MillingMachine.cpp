@@ -67,7 +67,8 @@ void MillingMachine::sendMessage(QSerialPort* serialPort)
     serialPort->flush();
     bool shouldSend = !messages.empty() && (messages.front().getCode() == 'S' ||
                                             messages.front().getCode() == 'C' ||
-                                            (/*statusMachine.calibrated &&*/ !statusMachine.moving));
+                                            messages.front().getCode() == 'Z' ||
+                                            (statusMachine.calibrated && !statusMachine.moving));
     if (!shouldSend) {
         messages.push_back(Message{'P'});
     }else{
@@ -96,15 +97,21 @@ void MillingMachine::sendMessage(QSerialPort* serialPort)
     }
 
     if(reciveMessage){
-        QVector<unsigned char> data = response.getData();
+        QVector<uint8_t> data = response.getData();
         switch (response.getCode()) {
         case 'P':
-            statusMachine.xCoordinate = (float)((data[1] << 8) | data[0])/ 100.0f;
-            statusMachine.yCoordinate = (float)((data[3] << 8) | data[2]) / 100.0f;
-            statusMachine.zCoordinate = (float)((data[5] << 8) | data[4]) / 100.0f;
-            statusMachine.velocity = (float)((data[7] << 8) | data[6]) / 100.0f;
-            statusMachine.calibrated = bool(data[8]);
-            statusMachine.moving = bool(data[9]);
+            statusMachine.xCoordinate = (data[2] & 0b10000000) ? -1 : 1;
+            statusMachine.xCoordinate *= (float)(((data[2] & 0b01111111) << 16) | (data[1] << 8) | data[0])/ 100.0f;
+
+            statusMachine.yCoordinate = (data[5] & 0b10000000) ? -1 : 1;
+            statusMachine.yCoordinate *= (float)(((data[5] & 0b01111111) << 16) | (data[4] << 8) | data[3]) / 100.0f;
+
+            statusMachine.yCoordinate = (data[8] & 0b10000000) ? -1 : 1;
+            statusMachine.zCoordinate *= (float)(((data[8] & 0b01111111) << 16) | (data[7] << 8) | data[6]) / 100.0f;
+
+            statusMachine.velocity = (float)((data[10] << 8) | data[9]) / 100.0f;
+            statusMachine.calibrated = bool(data[11]);
+            statusMachine.moving = bool(data[12]);
             break;
         case 'C':
             serialPort->close();
@@ -170,8 +177,12 @@ void MillingMachine::startMilling(const QStringList& lCommands)
 {
     QMutexLocker locker(&m_Operating);
     if(listCommands.empty() && !statusMachine.moving){
-        listCommands = lCommands;
-        operating = true;
+        if(statusMachine.calibrated){
+            listCommands = lCommands;
+            operating = true;
+        }else{
+            messages.push_front(Message{'Z'});
+        }
     }
 }
 
@@ -198,10 +209,10 @@ void MillingMachine::changeVelocity(float velocity)
 {
     QMutexLocker locker(&m_Operating);
     if(listCommands.empty() && messages.empty() && statusMachine.calibrated && !statusMachine.moving){
-        QVector<unsigned char> velocity_data;
+        QVector<uint8_t> velocity_data;
         formatedNumber(velocity, velocity_data);
         velocity_data.pop_front();
-        messages.push_front({'V', static_cast<unsigned char>(velocity_data.size()), velocity_data});
+        messages.push_front({'V', static_cast<uint8_t>(velocity_data.size()), velocity_data});
     }
 }
 
@@ -274,34 +285,39 @@ void MillingMachine::operatingCommands()
 
 void MillingMachine::addMessage(const GCode& gcode, const GCode& previousGCode){
     if(gcode.function == 1){
-        QVector<unsigned char> result;
+        QVector<uint8_t> result;
         formatedNumber(gcode.X, result);
         formatedNumber(gcode.Y, result);
         formatedNumber(gcode.Z, result);
-        messages.push_back(Message{'N', static_cast<unsigned char>(result.size()), result});
+        messages.push_back(Message{'N', static_cast<uint8_t>(result.size()), result});
         //qDebug() << gcode.X << " " << gcode.Y << " " << gcode.Z;
     }else if(gcode.function == 2 || gcode.function == 3){
         Arc arc(Point{previousGCode.X, previousGCode.Y, previousGCode.Z},
                 Point{gcode.X, gcode.Y, gcode.Z},
                 Point{gcode.X + gcode.I, gcode.Y + gcode.J, gcode.Z + gcode.K}, gcode.function == 2);
         for(const Point& point: arc.getArcPoints()){
-            QVector<unsigned char> coordiates_data;
+            QVector<uint8_t> coordiates_data;
             formatedNumber(point.x, coordiates_data);
             formatedNumber(point.y, coordiates_data);
             formatedNumber(point.z, coordiates_data);
             {
                 QMutexLocker locker(&m_Operating);
-                messages.push_back(Message{'N', static_cast<unsigned char>(coordiates_data.size()), coordiates_data});
+                messages.push_back(Message{'N', static_cast<uint8_t>(coordiates_data.size()), coordiates_data});
             }
         }
     }
 }
 
-void MillingMachine::formatedNumber(float num, QVector<unsigned char>& data)
+void MillingMachine::formatedNumber(float num, QVector<uint8_t>& data)
 {
-    int16_t num_int = num*100;
+    uint32_t num_int = num*100;
     data.push_back((uint8_t)(num_int & 0xFF));
     data.push_back((uint8_t)((num_int >> 8) & 0xFF));
+    if(num < 0){
+        data.push_back(((uint8_t)((num_int >> 16) & 0xFF)) | 0b10000000);
+    }else{
+        data.push_back((uint8_t)((num_int >> 16) & 0xFF));
+    }
 }
 
 

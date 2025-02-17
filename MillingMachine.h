@@ -68,7 +68,7 @@ class MillingMachine : public QThread
         void sendMessage(QSerialPort* serialPort);
         void connectDevice(QSerialPort* serialPort);
         void addMessage(const GCode& gcode, const GCode& previousGCode);
-        void formatedNumber(float number, QVector<unsigned char>&);
+        void formatedNumber(float number, QVector<uint8_t>&);
         void operatingCommands();
         static MillingMachine* millingMachine;
         bool connectDivece = false;

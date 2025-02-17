@@ -1,9 +1,14 @@
 #include "Machine.h"
 
 void Machine::ReadNextCoordinate(uint8_t* data){
-	float next_x = (float)((data[1] << 8) | data[0]) / 100.0f;
-	float next_y = (float)((data[3] << 8) | data[2]) / 100.0f;
-	float next_z = (float)((data[5] << 8) | data[4]) / 100.0f;
+	float next_x = (data[2] & 0b10000000) ? -1 : 1;
+	next_x *= (float)(((data[2] & 0b01111111) << 16) | (data[1] << 8) | data[0]) / 100.0f;
+
+	float next_y = (data[5] & 0b10000000) ? -1 : 1;
+	next_y *= (float)(((data[5] & 0b01111111) << 16) | (data[4] << 8) | data[3]) / 100.0f;
+
+	float next_z = (data[8] & 0b10000000) ? -1 : 1;
+	next_z *= (float)(((data[8] & 0b01111111) << 16) | (data[7] << 8) | data[6]) / 100.0f;
 	
 	int32_t number_steps_x = next_x*MotorHorizontalX->GetStepsOneMM();
 	int32_t number_steps_y = next_y*MotorHorizontalY->GetStepsOneMM();
@@ -78,17 +83,23 @@ void Machine::GetStatus(uint8_t* data){
 	float x_coordinate = float(MotorHorizontalX->GetCurrentNumberSteps()) / MotorHorizontalX->GetStepsOneMM();
 	formatedNumber(data + 2, x_coordinate);
 	float y_coordinate = float(MotorHorizontalY->GetCurrentNumberSteps()) / MotorHorizontalY->GetStepsOneMM();
-	formatedNumber(data + 4, y_coordinate);
+	formatedNumber(data + 5, y_coordinate);
 	float z_coordinate = float(MotorVerticalZ->GetCurrentNumberSteps()) / MotorVerticalZ->GetStepsOneMM();
-	formatedNumber(data + 6, z_coordinate);
-	formatedNumber(data + 8, velocity);
-	data[10] = Calibrated();
-	data[11] = !CheckStopMotors();
+	formatedNumber(data + 8, z_coordinate);
+	formatedNumber(data + 11, velocity);
+	data[13] = Calibrated();
+	data[14] = !CheckStopMotors();
 }
 
 void Machine::formatedNumber(uint8_t* data, float number){
-	int16_t num_int = number*100;
+	uint32_t num_int = num * 100;
 	data[0] = (uint8_t)(num_int & 0xFF);
 	data[1] = (uint8_t)((num_int >> 8) & 0xFF);
+	if (num < 0) {
+		data[2] = ((uint8_t)((num_int >> 16) & 0xFF)) | 0b10000000;
+	}
+	else {
+		data[2] = (uint8_t)((num_int >> 16) & 0xFF);
+	}
 }
 

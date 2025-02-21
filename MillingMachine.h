@@ -27,6 +27,7 @@ struct Status{
     Status(): calibrated(false), moving(false), xCoordinate(0), yCoordinate(0), zCoordinate(0) {}
     bool calibrated;
     bool moving;
+    bool sendNextCoordinate;
     float xCoordinate, yCoordinate, zCoordinate;
     float velocity;
 };
@@ -79,7 +80,7 @@ class MillingMachine : public QThread
         QQueue<Message> messages;
         QTimer timerUpdate;
         QStringList listCommands;
-        QMutex m_Operating;
+        QMutex m_Operating, m_Connect;
         GCode previousGCode;
         Status statusMachine;
     signals:

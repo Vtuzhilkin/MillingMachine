@@ -20,7 +20,7 @@ MillingMachine::MillingMachine(QObject *parent)
 {
     connect(&timerUpdate, &QTimer::timeout, this, &MillingMachine::updateLeds);
     connect(&timerUpdate, &QTimer::timeout, this, &MillingMachine::updateCoordiantes);
-    timerUpdate.setInterval(10);
+    timerUpdate.setInterval(30);
     timerUpdate.start();
 
     mThread = true;
@@ -61,6 +61,7 @@ void MillingMachine::run()
 
 void MillingMachine::sendMessage(QSerialPort* serialPort)
 {
+    QMutexLocker locker(&m_Operating);
     bool sendMessage = false;
     int nTry = 3;
     // Если список не пустой то (мы можем отправить команду стоп) или (новые координаты если он откалиброван и стоит на месте)
@@ -68,15 +69,16 @@ void MillingMachine::sendMessage(QSerialPort* serialPort)
     bool shouldSend = !messages.empty() && (messages.front().getCode() == 'S' ||
                                             messages.front().getCode() == 'C' ||
                                             messages.front().getCode() == 'Z' ||
-                                            (statusMachine.calibrated && !statusMachine.moving));
-    if (!shouldSend) {
-        messages.push_back(Message{'P'});
+                                            (statusMachine.calibrated && statusMachine.sendNextCoordinate));
+    Message command('0');
+    if (shouldSend) {
+        command = messages.front();
     }else{
-        int a = 0;
+        command = Message('P');
     }
 
     while (!sendMessage && nTry) {
-        sendMessage = (serialPort->write(messages.front().toQByteArray().data(), 20) != -1);
+        sendMessage = (serialPort->write(command.toQByteArray().data(), 20) != -1);
         serialPort->waitForBytesWritten(1000);
         nTry--;
     }
@@ -87,7 +89,9 @@ void MillingMachine::sendMessage(QSerialPort* serialPort)
         if(serialPort->waitForReadyRead(1000)){
             response = Message(serialPort->readAll());
             if(response.checkCRC()){
-                messages.pop_front();
+                if(command.getCode() != 'P'){
+                    messages.pop_front();
+                }
                 reciveMessage = true;
             }
         }else{
@@ -106,12 +110,13 @@ void MillingMachine::sendMessage(QSerialPort* serialPort)
             statusMachine.yCoordinate = (data[5] & 0b10000000) ? -1 : 1;
             statusMachine.yCoordinate *= (float)(((data[5] & 0b01111111) << 16) | (data[4] << 8) | data[3]) / 100.0f;
 
-            statusMachine.yCoordinate = (data[8] & 0b10000000) ? -1 : 1;
+            statusMachine.zCoordinate = (data[8] & 0b10000000) ? -1 : 1;
             statusMachine.zCoordinate *= (float)(((data[8] & 0b01111111) << 16) | (data[7] << 8) | data[6]) / 100.0f;
 
             statusMachine.velocity = (float)((data[10] << 8) | data[9]) / 100.0f;
-            statusMachine.calibrated = bool(data[11]);
-            statusMachine.moving = bool(data[12]);
+            statusMachine.calibrated = data[11] && 1;
+            statusMachine.moving = (data[11] >> 1) && 1;
+            statusMachine.sendNextCoordinate = (data[11] >> 2) && 1;
             break;
         case 'C':
             serialPort->close();
@@ -143,15 +148,13 @@ void MillingMachine::connectDevice(QSerialPort* serialPort)
 
 void MillingMachine::openCOM(int numPort)
 {
-    if(!connectDivece){
-        connectDivece = true;
-        numberPort = numPort;
-    }
+    QMutexLocker locker(&m_Connect);
+    connectDivece = true;
+    numberPort = numPort;
 }
 
 void MillingMachine::closeCOM()
 {
-    QMutexLocker locker(&m_Operating);
     listCommands.clear();
     messages.clear();
     messages.push_front(Message{'C'});
@@ -165,7 +168,7 @@ bool MillingMachine::getStatusCOM()
 
 bool MillingMachine::getCalibrated()
 {
-    return statusMachine.calibrated;
+    return statusMachine.calibrated && openedPort;
 }
 
 bool MillingMachine::getProcessing()
@@ -289,6 +292,7 @@ void MillingMachine::addMessage(const GCode& gcode, const GCode& previousGCode){
         formatedNumber(gcode.X, result);
         formatedNumber(gcode.Y, result);
         formatedNumber(gcode.Z, result);
+        QMutexLocker locker(&m_Operating);
         messages.push_back(Message{'N', static_cast<uint8_t>(result.size()), result});
         //qDebug() << gcode.X << " " << gcode.Y << " " << gcode.Z;
     }else if(gcode.function == 2 || gcode.function == 3){

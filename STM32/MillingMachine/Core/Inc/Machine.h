@@ -18,8 +18,11 @@ class Machine{
 		StepperMotor* MotorVerticalZ;
 		
 		Coordinates current_coordinates{0, 0, 0};
+		Coordinates next_coordinates{0, 0, 0};
 		
 		bool openedCOMPort = false;
+		bool readNextCoordinate = true;
+		bool permissionStart = false;
 		
 		void formatedNumber(uint8_t* data, float number);
 		
@@ -28,11 +31,15 @@ class Machine{
 		bool CheckStopMotors();
 		void Start();
 		void Stop();
+		void Pause();
 		void ReadNextCoordinate(uint8_t* data);
+		void SetNextCoordinate();
 		bool Calibrated();
 		void SetVelocity(uint8_t* pVelocity);
 		void SetCOMPort(bool open);
 		bool GetCOMPort();
 		void GetStatus(uint8_t* data);
+		void SetPermissionStart(bool);
+		bool GetPermissionStart();
 		
 };

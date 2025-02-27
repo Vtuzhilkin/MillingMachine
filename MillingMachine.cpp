@@ -66,10 +66,9 @@ void MillingMachine::sendMessage(QSerialPort* serialPort)
     int nTry = 3;
     // Если список не пустой то (мы можем отправить команду стоп) или (новые координаты если он откалиброван и стоит на месте)
     serialPort->flush();
-    bool shouldSend = !messages.empty() && (messages.front().getCode() == 'S' ||
-                                            messages.front().getCode() == 'C' ||
-                                            messages.front().getCode() == 'Z' ||
-                                            (statusMachine.calibrated && statusMachine.sendNextCoordinate));
+    bool shouldSend = !messages.empty() && (messages.front().getCode() != 'N' ||
+                                            (messages.front().getCode() == 'N' && 
+                                                statusMachine.calibrated && statusMachine.sendNextCoordinate));
     Message command('0');
     if (shouldSend) {
         command = messages.front();
@@ -114,9 +113,9 @@ void MillingMachine::sendMessage(QSerialPort* serialPort)
             statusMachine.zCoordinate *= (float)(((data[8] & 0b01111111) << 16) | (data[7] << 8) | data[6]) / 100.0f;
 
             statusMachine.velocity = (float)((data[10] << 8) | data[9]) / 100.0f;
-            statusMachine.calibrated = data[11] && 1;
-            statusMachine.moving = (data[11] >> 1) && 1;
-            statusMachine.sendNextCoordinate = (data[11] >> 2) && 1;
+            statusMachine.calibrated = data[11] & 1;
+            statusMachine.moving = (data[11] >> 1) & 1;
+            statusMachine.sendNextCoordinate = (data[11] >> 2) & 1;
             break;
         case 'C':
             serialPort->close();
@@ -173,7 +172,7 @@ bool MillingMachine::getCalibrated()
 
 bool MillingMachine::getProcessing()
 {
-    return statusMachine.moving;
+    return statusMachine.moving && openedPort;
 }
 
 void MillingMachine::startMilling(const QStringList& lCommands)
@@ -182,7 +181,6 @@ void MillingMachine::startMilling(const QStringList& lCommands)
     if(listCommands.empty() && !statusMachine.moving){
         if(statusMachine.calibrated){
             listCommands = lCommands;
-            operating = true;
         }else{
             messages.push_front(Message{'Z'});
         }
@@ -199,22 +197,23 @@ void MillingMachine::stopMilling()
 
 void MillingMachine::continueMilling()
 {
-    operating = true;
+    QMutexLocker locker(&m_Operating);
+    messages.push_front('K');
 }
 
 void MillingMachine::pauseMilling()
 {
     QMutexLocker locker(&m_Operating);
-    messages.push_front('S');
+    messages.push_front('B');
 }
 
 void MillingMachine::changeVelocity(float velocity)
 {
     QMutexLocker locker(&m_Operating);
-    if(listCommands.empty() && messages.empty() && statusMachine.calibrated && !statusMachine.moving){
+    if(statusMachine.calibrated && !statusMachine.moving && velocity > 0.01 && velocity < 10){
         QVector<uint8_t> velocity_data;
         formatedNumber(velocity, velocity_data);
-        velocity_data.pop_front();
+        velocity_data.pop_back();
         messages.push_front({'V', static_cast<uint8_t>(velocity_data.size()), velocity_data});
     }
 }
@@ -237,7 +236,7 @@ void MillingMachine::operatingCommands()
     std::string line;
     {
         QMutexLocker locker(&m_Operating);
-        line = listCommands.front().toStdString();
+        line = listCommands.front().toUtf8();
         listCommands.pop_front();
     }
     GCode gcode;
@@ -314,7 +313,7 @@ void MillingMachine::addMessage(const GCode& gcode, const GCode& previousGCode){
 
 void MillingMachine::formatedNumber(float num, QVector<uint8_t>& data)
 {
-    uint32_t num_int = num*100;
+    uint32_t num_int = abs(num*100);
     data.push_back((uint8_t)(num_int & 0xFF));
     data.push_back((uint8_t)((num_int >> 8) & 0xFF));
     if(num < 0){

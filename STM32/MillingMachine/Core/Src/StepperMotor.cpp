@@ -15,8 +15,9 @@ void StepperMotor::SetPorts(GPIO_TypeDef* dir_port, uint16_t dir_pin, GPIO_TypeD
 void StepperMotor::SetPWM(TIM_HandleTypeDef* ht, uint32_t ch){
 	timer = ht;
 	channel_timer = ch;
-	timer->Instance->ARR = step_divider*200*thread_pitch/velocity;
+	timer->Instance->ARR = step_divider*2*thread_pitch;
 	timer->Instance->CCR1 = timer->Instance->ARR/2;
+	timer->Instance->PSC = 100/velocity;
 }
 
 void StepperMotor::Start(){
@@ -36,20 +37,19 @@ void StepperMotor::CalculateNumberSteps(int32_t finish_coordinate){
 	direction  = finish_coordinate > current_number_steps ? positive_direction : !positive_direction;
 	number_steps = abs(finish_coordinate - current_number_steps);
 	HAL_GPIO_WritePin(DIR_Port, DIR_Pin, (GPIO_PinState)direction);
+	taken_steps = 0;
 }
 
 void StepperMotor::ChangeVelocity(const float ratio){
 	if(ratio != 0){
-		timer->Instance->ARR = step_divider*200*thread_pitch/(velocity*ratio);
-		timer->Instance->CCR1 = timer->Instance->ARR/2;
+		timer->Instance->PSC = fmin(100/(velocity*ratio), 65535);
 	}
 }
 
 
 void StepperMotor::SetVelocity(const float new_velociy){
-	timer->Instance->ARR = step_divider*200*thread_pitch/(new_velociy);
-	timer->Instance->CCR1 = timer->Instance->ARR/2;
 	velocity = new_velociy;
+	timer->Instance->PSC = fmin(100/velocity, 65535);
 }
 
 

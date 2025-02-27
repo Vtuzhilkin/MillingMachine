@@ -19,34 +19,36 @@ void Machine::ReadNextCoordinate(uint8_t* data){
 
 
 void Machine::SetNextCoordinate(){
-	MotorHorizontalX->CalculateNumberSteps(next_coordinates.coordinate_x);
-	MotorHorizontalY->CalculateNumberSteps(next_coordinates.coordinate_y);
-	MotorVerticalZ->CalculateNumberSteps(next_coordinates.coordinate_z);
-	
-	float coordinate_difference_x = next_coordinates.coordinate_x - MotorHorizontalX->GetCurrentNumberSteps();
-	float coordinate_difference_y = next_coordinates.coordinate_y - MotorHorizontalY->GetCurrentNumberSteps();
-	float coordinate_difference_z = next_coordinates.coordinate_z - MotorVerticalZ->GetCurrentNumberSteps();
-	
-	float hypotenuse = sqrt(coordinate_difference_x*coordinate_difference_x + coordinate_difference_y*coordinate_difference_y);
-	
-	float part_velocity_x = 1;
-	float part_velocity_y = 1;
-	float part_velocity_z = 1;
-	
-	if(hypotenuse != 0){
-		part_velocity_x = abs(coordinate_difference_x/hypotenuse);
-		if(part_velocity_x < 0){
-			part_velocity_x = 1;
+	if(!pauseProcessing){
+		MotorHorizontalX->CalculateNumberSteps(next_coordinates.coordinate_x);
+		MotorHorizontalY->CalculateNumberSteps(next_coordinates.coordinate_y);
+		MotorVerticalZ->CalculateNumberSteps(next_coordinates.coordinate_z);
+
+		float coordinate_difference_x = next_coordinates.coordinate_x - MotorHorizontalX->GetCurrentNumberSteps();
+		float coordinate_difference_y = next_coordinates.coordinate_y - MotorHorizontalY->GetCurrentNumberSteps();
+		float coordinate_difference_z = next_coordinates.coordinate_z - MotorVerticalZ->GetCurrentNumberSteps();
+
+		float hypotenuse = sqrt(coordinate_difference_x*coordinate_difference_x + coordinate_difference_y*coordinate_difference_y);
+
+		float part_velocity_x = 1;
+		float part_velocity_y = 1;
+		float part_velocity_z = 1;
+
+		if(hypotenuse != 0){
+			part_velocity_x = abs(coordinate_difference_x/hypotenuse);
+			if(part_velocity_x < 0){
+				part_velocity_x = 1;
+			}
+			part_velocity_y = abs(coordinate_difference_y/hypotenuse);
+			if(part_velocity_z < 0){
+				part_velocity_y = 1;
+			}
 		}
-		part_velocity_y = abs(coordinate_difference_y/hypotenuse);
-		if(part_velocity_z < 0){
-			part_velocity_y = 1;
-		}
+		MotorHorizontalX->ChangeVelocity(part_velocity_x);
+		MotorHorizontalY->ChangeVelocity(part_velocity_y);
+
+		readNextCoordinate = true;
 	}
-	MotorHorizontalX->ChangeVelocity(part_velocity_x);
-	MotorHorizontalY->ChangeVelocity(part_velocity_y);
-	
-	readNextCoordinate = true;
 }
 
 bool Machine::CheckStopMotors(){
@@ -58,6 +60,7 @@ void Machine::Start(){
 	MotorHorizontalY->Start();
 	MotorVerticalZ->Start();
 	permissionStart = false;
+	pauseProcessing = false;
 }
 
 void Machine::Stop(){
@@ -66,6 +69,7 @@ void Machine::Stop(){
 	MotorVerticalZ->Stop();
 	readNextCoordinate = true;
 	permissionStart = false;
+	pauseProcessing = false;
 }
 
 
@@ -73,6 +77,8 @@ void Machine::Pause(){
 	MotorHorizontalX->Stop();
 	MotorHorizontalY->Stop();
 	MotorVerticalZ->Stop();
+	permissionStart = false;
+	pauseProcessing = true;
 }
 
 bool Machine::Calibrated(){
@@ -110,7 +116,7 @@ void Machine::GetStatus(uint8_t* data){
 }
 
 void Machine::formatedNumber(uint8_t* data, float number){
-	uint32_t num_int = number * 100;
+	uint32_t num_int = abs(number * 100);
 	data[0] = (uint8_t)(num_int & 0xFF);
 	data[1] = (uint8_t)((num_int >> 8) & 0xFF);
 	if (number < 0) {
@@ -128,5 +134,10 @@ void Machine::SetPermissionStart(bool permission){
 
 bool Machine::GetPermissionStart(){
 	return permissionStart;
+}
+
+
+bool Machine::GetPauseProcessing(){
+	return pauseProcessing;
 }
 

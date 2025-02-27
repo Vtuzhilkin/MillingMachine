@@ -119,36 +119,52 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-		if(huart1.Instance->CR3 == 0){
+		if (huart1.Instance->CR3 == 0) {
 			HAL_UART_Receive_IT(&huart1, data, 20);
 			uint16_t size_data = data[1] + 4;
-				
-			if(checkMessage(data, size_data - 2)){
-				if(data[0] == 'O'){
+
+			if (checkMessage(data, size_data - 2)) {
+				if (data[0] == 'O') {
 					machineMilling.SetCOMPort(true);
 					HAL_UART_Transmit_IT(&huart1, data, size_data);
-				}else if(data[0] 	== 'C'){
+				}
+				else if (data[0] == 'C') {
 					machineMilling.SetCOMPort(false);
 					HAL_UART_Transmit_IT(&huart1, data, size_data);
-				}else if(machineMilling.GetCOMPort()){
-						if(data[0] == 'S'){
-							machineMilling.Stop();
-						}else if(data[0] == 'N'){
-							machineMilling.ReadNextCoordinate(data + 2);
-							machineMilling.Start();
-						}else if(data[0] == 'V'){
-							machineMilling.SetVelocity(data + 2);
-						}
-						else if (data[0] == 'Z' && !machineMilling.Calibrated) {
-							machineMilling.Start();
-						}
-						machineMilling.GetStatus(data);
-						uint16_t crc = crc16(data, 15);
-						data[15] = (crc & 0xFF);
-						data[16] = ((crc >> 8) & 0xFF);
-						HAL_UART_Transmit_IT(&huart1, data, 17);
+				}
+				else if (machineMilling.GetCOMPort()) {
+					if (data[0] == 'S') {
+						machineMilling.Stop();
+					}
+					else if (data[0] == 'B') {
+						machineMilling.Pause();
+					}
+					else if (data[0] == 'K' && machineMilling.GetPauseProcessing()) {
+						machineMilling.Start();
+						machineMilling.SetPermissionStart(true);
+					}
+					else if (data[0] == 'N') {
+						machineMilling.ReadNextCoordinate(data + 2);
+						machineMilling.SetPermissionStart(true);
+					}
+					else if (data[0] == 'V') {
+						machineMilling.SetVelocity(data + 2);
+					}
+					else if (data[0] == 'Z' && !machineMilling.Calibrated()) {
+						machineMilling.Start();
+					}
+					machineMilling.GetStatus(data);
+					uint16_t crc = crc16(data, 14);
+					data[14] = (crc & 0xFF);
+					data[15] = ((crc >> 8) & 0xFF);
+					HAL_UART_Transmit_IT(&huart1, data, 16);
 				}
 			}
+		}
+
+		if (machineMilling.GetPermissionStart() && machineMilling.CheckStopMotors()) {
+			machineMilling.SetNextCoordinate();
+			machineMilling.Start();
 		}
 
     /* USER CODE END WHILE */

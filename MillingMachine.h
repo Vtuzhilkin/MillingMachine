@@ -76,7 +76,6 @@ class MillingMachine : public QThread
         bool openedPort = false;
         int numberPort = 0;
         bool mThread = false;
-        bool operating = false;
         QQueue<Message> messages;
         QTimer timerUpdate;
         QStringList listCommands;

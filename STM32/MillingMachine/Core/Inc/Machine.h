@@ -23,6 +23,7 @@ class Machine{
 		bool openedCOMPort = false;
 		bool readNextCoordinate = true;
 		bool permissionStart = false;
+		bool pauseProcessing = false;
 		
 		void formatedNumber(uint8_t* data, float number);
 		
@@ -41,5 +42,6 @@ class Machine{
 		void GetStatus(uint8_t* data);
 		void SetPermissionStart(bool);
 		bool GetPermissionStart();
+		bool GetPauseProcessing();
 		
 };

@@ -24,12 +24,14 @@ void StepperMotor::Start(){
 	if(number_steps != 0 || !calibrated){
 		moving = true;
 		HAL_TIM_PWM_Start_IT(timer, channel_timer);
+		//HAL_GPIO_WritePin(EN_Port, EN_Pin, GPIO_PIN_RESET);
 	}
 }
 
 void StepperMotor::Stop(){
 	moving = false;
 	HAL_TIM_PWM_Stop_IT(timer, channel_timer);
+	//HAL_GPIO_WritePin(EN_Port, EN_Pin, GPIO_PIN_SET);
 }
 
 

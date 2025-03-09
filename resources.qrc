@@ -5,7 +5,6 @@
         <file>shaders/gradient.frag.qsb</file>
         <file>shaders/gradientShadow.frag.qsb</file>
         <file>fonts/Montserrat-Medium.ttf</file>
-        <file>models/MachineFrame.mesh</file>
         <file>COMport.qml</file>
         <file>GradientButton.qml</file>
         <file>GradientRectangle.qml</file>
@@ -16,5 +15,17 @@
         <file>RuleButtons.qml</file>
         <file>Status.qml</file>
         <file>Window3D.qml</file>
+        <file>models/Body.mesh</file>
+        <file>models/Corners.mesh</file>
+        <file>models/Guides.mesh</file>
+        <file>models/GuidesHolders.mesh</file>
+        <file>models/GuidesLStepper.mesh</file>
+        <file>models/GuidesStepper.mesh</file>
+        <file>models/Spindel.mesh</file>
+        <file>models/SpindelHolder.mesh</file>
+        <file>models/Table.mesh</file>
+        <file>models/TableGuides.mesh</file>
+        <file>models/TableSteppers.mesh</file>
+        <file>models/GuidesS.mesh</file>
     </qresource>
 </RCC>

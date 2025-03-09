@@ -54,17 +54,17 @@ UART_HandleTypeDef huart1;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_TIM2_Init(void);
-static void MX_TIM3_Init(void);
 static void MX_TIM17_Init(void);
 static void MX_USART1_UART_Init(void);
+static void MX_TIM3_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-StepperMotor motorX(2.0, false, 2.0, 32);
-StepperMotor motorY(2.0, false, 2.0, 32);
+StepperMotor motorX(4.0, false, 2.0, 32);
+StepperMotor motorY(4.0, false, 2.0, 32);
 StepperMotor motorZ(2.0, false, 8.0, 32);
 /* USER CODE END 0 */
 
@@ -98,10 +98,12 @@ int main(void)
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
   MX_TIM2_Init();
-  MX_TIM3_Init();
   MX_TIM17_Init();
   MX_USART1_UART_Init();
+  MX_TIM3_Init();
   /* USER CODE BEGIN 2 */
+	//HAL_GPIO_WritePin(M3_VCC_Port, M3_VCC_Pin, GPIO_PIN_SET);
+	
 	motorX.SetPorts(M1_DIR_GPIO_Port, M1_DIR_Pin, M1_EN_GPIO_Port, M1_EN_Pin, M1_END_GPIO_Port, M1_END_Pin);
 	motorX.SetPWM(&htim17, TIM_CHANNEL_1);	
 	
@@ -290,7 +292,7 @@ static void MX_TIM3_Init(void)
   htim3.Instance = TIM3;
   htim3.Init.Prescaler = 0;
   htim3.Init.CounterMode = TIM_COUNTERMODE_UP;
-  htim3.Init.Period = 6400;
+  htim3.Init.Period = 65535;
   htim3.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
   htim3.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
   if (HAL_TIM_PWM_Init(&htim3) != HAL_OK)
@@ -304,7 +306,7 @@ static void MX_TIM3_Init(void)
     Error_Handler();
   }
   sConfigOC.OCMode = TIM_OCMODE_PWM1;
-  sConfigOC.Pulse = 3200;
+  sConfigOC.Pulse = 0;
   sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
   sConfigOC.OCFastMode = TIM_OCFAST_DISABLE;
   if (HAL_TIM_PWM_ConfigChannel(&htim3, &sConfigOC, TIM_CHANNEL_1) != HAL_OK)
@@ -438,17 +440,17 @@ static void MX_GPIO_Init(void)
                           |M1_GND_END_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, USART_VSS_Pin|M3_VCC_Pin|M3_EN_Pin|M3_DIR_Pin
-                          |M2_GND_END_Pin|M1_EN_Pin|M1_DIR_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOB, USART_VSS_Pin|M3_EN_Pin|M3_DIR_Pin|M2_GND_END_Pin
+                          |M1_EN_Pin|M1_DIR_Pin, GPIO_PIN_RESET);
+
+  /*Configure GPIO pin Output Level */
+  HAL_GPIO_WritePin(GPIOB, M3_VCC_Pin|M1_VCC_END_Pin|M2_VCC_END_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(M3_GND_END_GPIO_Port, M3_GND_END_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(M3_VCC_END_GPIO_Port, M3_VCC_END_Pin, GPIO_PIN_SET);
-
-  /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOB, M1_VCC_END_Pin|M2_VCC_END_Pin, GPIO_PIN_SET);
 
   /*Configure GPIO pins : M2_DIR_Pin M2_EN_Pin Orange_Led_Pin Green_Led_Pin
                            M3_VCC_END_Pin M1_GND_END_Pin */

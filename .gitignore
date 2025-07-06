@@ -1,0 +1,9 @@
+.vs/
+*MDK-ARM*
+*Drivers*
+*.mxproject
+*.ioc
+*.xlsx
+*.zip
+*.png
+*.user.*
